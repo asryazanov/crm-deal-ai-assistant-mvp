@@ -53,7 +53,7 @@ button { cursor: pointer; }
   z-index: 10;
 }
 .header-inner {
-  width: min(1200px, calc(100% - 48px));
+  width: min(1440px, calc(100% - 48px));
   margin: 0 auto;
   display: grid;
   grid-template-columns: 1fr minmax(220px, auto) auto;
@@ -77,7 +77,7 @@ button { cursor: pointer; }
 .primary-button .spinner { display: none; width: 14px; height: 14px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.45); border-top-color: #fff; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: -2px; }
 .primary-button.is-loading .spinner { display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.page { width: min(1200px, calc(100% - 48px)); margin: 24px auto; display: grid; gap: 16px; }
+.page { width: min(1440px, calc(100% - 48px)); margin: 24px auto; display: grid; gap: 16px; }
 .control-card, .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
 .control-card { padding: 20px 24px; display: grid; gap: 16px; }
 .control-top { display: grid; grid-template-columns: minmax(240px, 1fr) auto; gap: 16px; align-items: end; }
@@ -168,6 +168,30 @@ button { cursor: pointer; }
 .weight-row span { color: var(--color-muted); font-size: 12px; }
 .weight-row strong { font-weight: 500; }
 .weight-row em { font-style: normal; text-align: right; font-weight: 700; }
+
+.workspace-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+.main-column { display: grid; gap: 16px; min-width: 0; }
+.filter-panel { position: sticky; top: 88px; padding: 20px; display: grid; gap: 18px; max-height: calc(100vh - 112px); overflow: auto; }
+.filter-panel h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.filter-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.clear-button { border: 0; background: transparent; color: var(--color-primary); font-weight: 600; padding: 0; }
+.filter-group { display: grid; gap: 8px; }
+.filter-search { width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius-button); padding: 10px 11px; outline: none; }
+.filter-search:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.option-list { display: grid; gap: 6px; max-height: 166px; overflow: auto; padding-right: 2px; }
+.option-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px; border-radius: 8px; color: var(--color-text); transition: background 150ms ease; }
+.option-row:hover { background: #F9FAFB; }
+.option-row input { width: 16px; height: 16px; accent-color: var(--color-primary); }
+.option-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.option-count { color: var(--color-muted); font-size: 12px; }
+.active-filter-summary { color: var(--color-muted); font-size: 13px; line-height: 1.45; padding: 10px 12px; background: #F9FAFB; border: 1px solid var(--color-border); border-radius: 10px; }
+.cap-note { color: var(--color-muted); font-size: 12px; margin-top: 8px; line-height: 1.35; }
+.deal-list { max-height: 360px; }
+
+@media (max-width: 1020px) {
+  .workspace-grid { grid-template-columns: 1fr; }
+  .filter-panel { position: static; max-height: none; }
+}
 @media (max-width: 768px) {
   .header-inner, .page { width: calc(100% - 32px); }
   .header-inner { grid-template-columns: 1fr; gap: 4px; height: auto; padding: 12px 0; }
@@ -193,24 +217,34 @@ button { cursor: pointer; }
     </header>
 
     <!-- HTML: Controls and workspace -->
-    <main class="page">
-      <section class="control-card">
-        <div class="control-top">
-          <label class="search-box">
-            <span>Поиск сделки</span>
-            <input id="searchInput" type="search" placeholder="ID, клиент, партнер, менеджер">
-          </label>
-          <div class="filter-row" id="healthFilters">
-            <button class="chip is-active" data-health="all">Все</button>
-            <button class="chip" data-health="green">Зеленые</button>
-            <button class="chip" data-health="yellow">Желтые</button>
-            <button class="chip" data-health="red">Красные</button>
+    <main class="page workspace-grid">
+      <div class="main-column">
+        <section class="control-card">
+          <div class="control-top">
+            <label class="search-box">
+              <span>Поиск сделки</span>
+              <input id="searchInput" type="search" placeholder="ID, клиент, партнер, менеджер">
+            </label>
+            <div class="filter-row" id="healthFilters">
+              <button class="chip is-active" data-health="all">Все</button>
+              <button class="chip" data-health="green">Зеленые</button>
+              <button class="chip" data-health="yellow">Желтые</button>
+              <button class="chip" data-health="red">Красные</button>
+            </div>
           </div>
+          <div class="summary-grid" id="summaryGrid"></div>
+          <div class="deal-list" id="dealList" aria-label="Список сделок"></div>
+        </section>
+        <div id="dealCard"></div>
+      </div>
+      <aside class="filter-panel card" aria-label="Фильтры сделок">
+        <div class="filter-panel-header">
+          <h2>Фильтры</h2>
+          <button class="clear-button" id="clearFiltersButton">Сбросить</button>
         </div>
-        <div class="summary-grid" id="summaryGrid"></div>
-        <div class="deal-list" id="dealList" aria-label="Список сделок"></div>
-      </section>
-      <div id="dealCard"></div>
+        <div class="active-filter-summary" id="activeFilterSummary">Все сделки в выборке</div>
+        <div id="advancedFilters"></div>
+      </aside>
     </main>
 
     <!-- HTML: Embedded local dataset -->
@@ -4178,7 +4212,18 @@ const state = {
   scored: [],
   selectedId: null,
   search: "",
-  health: "all"
+  health: "all",
+  filters: {
+    partner: new Set(),
+    client: new Set(),
+    manager: new Set(),
+    amount: new Set()
+  },
+  filterSearch: {
+    partner: "",
+    client: "",
+    manager: ""
+  }
 };
 
 const formatRub = new Intl.NumberFormat("ru-RU", {
@@ -4364,15 +4409,19 @@ function scoreDeal(deal) {
   addFactor(factors, `История клиента с Axoft: ${deal[FIELD.clientHistory]} млн руб.`, clientHistoryDelta, "Клиент и история");
 
   score += factors.reduce((sum, factor) => sum + factor.delta, 0);
-  const probability = Math.round(clamp(score, 5, 95));
+  const rawProbability = Math.round(clamp(score, 5, 95));
   const criticalCount = risks.filter((risk) => risk.severity === "critical").length;
   const highCount = risks.filter((risk) => risk.severity === "high").length;
+  const cap = getProbabilityCap(criticalCount, highCount);
+  const probability = Math.min(rawProbability, cap);
   const health = getHealth(probability, criticalCount, highCount);
   const priority = probability >= 70 ? "Высокий" : probability >= 45 ? "Средний" : "Низкий";
 
   return {
     deal,
     probability,
+    rawProbability,
+    probabilityCap: cap,
     priority,
     health,
     risks,
@@ -4380,6 +4429,14 @@ function scoreDeal(deal) {
     managerActions: buildManagerActions(deal, risks),
     leaderActions: buildLeaderActions(deal, risks, probability)
   };
+}
+
+function getProbabilityCap(criticalCount, highCount) {
+  let cap = 95;
+  if (criticalCount >= 2) cap = Math.min(cap, 45);
+  else if (criticalCount === 1) cap = Math.min(cap, 70);
+  if (highCount >= 3) cap = Math.min(cap, 60);
+  return cap;
 }
 
 function getHealth(probability, criticalCount, highCount) {
@@ -4470,10 +4527,11 @@ function riskSeverityLabel(severity) {
 }
 
 function renderSummary() {
-  const total = state.scored.length;
-  const avg = Math.round(state.scored.reduce((sum, item) => sum + item.probability, 0) / total);
-  const red = state.scored.filter((item) => item.health === "red").length;
-  const green = state.scored.filter((item) => item.health === "green").length;
+  const visible = getVisibleDeals();
+  const total = visible.length;
+  const avg = total ? Math.round(visible.reduce((sum, item) => sum + item.probability, 0) / total) : 0;
+  const red = visible.filter((item) => item.health === "red").length;
+  const green = visible.filter((item) => item.health === "green").length;
 
   document.getElementById("summaryGrid").innerHTML = [
     ["Сделок", formatNumber.format(total)],
@@ -4491,9 +4549,13 @@ function renderSummary() {
 function getVisibleDeals() {
   const query = state.search.trim().toLowerCase();
   return state.scored.filter((item) => {
-    if (state.health !== "all" && item.health !== state.health) return false;
-    if (!query) return true;
     const deal = item.deal;
+    if (state.health !== "all" && item.health !== state.health) return false;
+    if (state.filters.partner.size && !state.filters.partner.has(deal[FIELD.partner])) return false;
+    if (state.filters.client.size && !state.filters.client.has(deal[FIELD.client])) return false;
+    if (state.filters.manager.size && !state.filters.manager.has(deal[FIELD.manager])) return false;
+    if (state.filters.amount.size && ![...state.filters.amount].some((range) => amountInRange(number(deal[FIELD.amount]), range))) return false;
+    if (!query) return true;
     return [
       deal[FIELD.id],
       deal[FIELD.client],
@@ -4541,7 +4603,13 @@ function renderDealList() {
 }
 
 function renderSelectedDeal() {
-  const selected = state.scored.find((item) => item.deal[FIELD.id] === state.selectedId) || state.scored[0];
+  const visible = getVisibleDeals();
+  if (!visible.length) {
+    document.getElementById("selectedDealName").textContent = "Нет сделок по фильтрам";
+    document.getElementById("dealCard").innerHTML = `<section class="card empty-state">Измените фильтры справа или очистите поиск, чтобы увидеть карточку сделки.</section>`;
+    return;
+  }
+  const selected = visible.find((item) => item.deal[FIELD.id] === state.selectedId) || visible[0];
   if (!selected) return;
   state.selectedId = selected.deal[FIELD.id];
 
@@ -4745,6 +4813,7 @@ function renderSelectedDeal() {
         <div class="metric-number ${selected.health}" data-count-target="${selected.probability}">0%</div>
         <div class="progress-track"><div class="progress-fill ${selected.health}" style="width: 0%" data-width="${selected.probability}%"></div></div>
         <p>${deal[FIELD.stage]}</p>
+        ${selected.probability < selected.rawProbability ? `<div class="cap-note">Вероятность ограничена правилами здоровья сделки</div>` : ""}
       </article>
       <article class="metric-card card" style="animation-delay: 0.12s">
         <span class="label">Здоровье сделки</span>
@@ -4839,18 +4908,112 @@ function recalculateCurrentDeal() {
   }, 500);
 }
 
+
+const amountRanges = [
+  { id: "lt5", label: "до 5 млн", test: (value) => value < 5000000 },
+  { id: "5to10", label: "5-10 млн", test: (value) => value >= 5000000 && value < 10000000 },
+  { id: "10to50", label: "10-50 млн", test: (value) => value >= 10000000 && value < 50000000 },
+  { id: "gte50", label: "от 50 млн", test: (value) => value >= 50000000 }
+];
+
+function amountInRange(value, rangeId) {
+  return amountRanges.find((range) => range.id === rangeId)?.test(value) || false;
+}
+
+function uniqueValues(field) {
+  return [...new Set(state.deals.map((deal) => deal[field]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), "ru"));
+}
+
+function countForOption(field, value) {
+  return state.deals.filter((deal) => deal[field] === value).length;
+}
+
+function selectedFilterCount() {
+  return Object.values(state.filters).reduce((sum, set) => sum + set.size, 0);
+}
+
+function renderFilterPanel() {
+  const config = [
+    { key: "partner", label: "Партнер", field: FIELD.partner, searchable: true },
+    { key: "client", label: "Клиент", field: FIELD.client, searchable: true },
+    { key: "manager", label: "Менеджер", field: FIELD.manager, searchable: true },
+    { key: "amount", label: "Сумма сделки", amount: true }
+  ];
+  document.getElementById("activeFilterSummary").textContent = selectedFilterCount()
+    ? `Активных фильтров: ${selectedFilterCount()}`
+    : "Все сделки в выборке";
+  document.getElementById("advancedFilters").innerHTML = config.map((item) => renderFilterGroup(item)).join("");
+  wireFilterPanel();
+}
+
+function renderFilterGroup(item) {
+  const options = item.amount
+    ? amountRanges.map((range) => ({ value: range.id, label: range.label, count: state.deals.filter((deal) => range.test(number(deal[FIELD.amount]))).length }))
+    : uniqueValues(item.field)
+      .filter((value) => String(value).toLowerCase().includes((state.filterSearch[item.key] || "").toLowerCase()))
+      .map((value) => ({ value, label: value, count: countForOption(item.field, value) }));
+  return `
+    <section class="filter-group" data-filter-group="${item.key}">
+      <span class="label">${item.label}</span>
+      ${item.searchable ? `<input class="filter-search" data-filter-search="${item.key}" value="${state.filterSearch[item.key] || ""}" placeholder="Найти ${item.label.toLowerCase()}">` : ""}
+      <div class="option-list">
+        ${options.map((option) => `
+          <label class="option-row">
+            <input type="checkbox" data-filter-key="${item.key}" value="${String(option.value).replaceAll('"', '&quot;')}" ${state.filters[item.key].has(option.value) ? "checked" : ""}>
+            <span>${option.label}</span>
+            <em class="option-count">${option.count}</em>
+          </label>
+        `).join("") || `<div class="empty-state">Ничего не найдено</div>`}
+      </div>
+    </section>
+  `;
+}
+
+function wireFilterPanel() {
+  document.querySelectorAll("[data-filter-key]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const key = input.dataset.filterKey;
+      if (input.checked) state.filters[key].add(input.value);
+      else state.filters[key].delete(input.value);
+      renderFilterPanel();
+      render();
+    });
+  });
+  document.querySelectorAll("[data-filter-search]").forEach((input) => {
+    input.addEventListener("input", () => {
+      const key = input.dataset.filterSearch;
+      state.filterSearch[key] = input.value;
+      renderFilterPanel();
+      const nextInput = document.querySelector(`[data-filter-search="${key}"]`);
+      if (nextInput) {
+        nextInput.focus();
+        nextInput.setSelectionRange(nextInput.value.length, nextInput.value.length);
+      }
+    });
+  });
+}
+
+function clearAdvancedFilters() {
+  Object.values(state.filters).forEach((set) => set.clear());
+  Object.keys(state.filterSearch).forEach((key) => { state.filterSearch[key] = ""; });
+  renderFilterPanel();
+  render();
+}
+
 function init() {
   state.deals = JSON.parse(document.getElementById("deals-data").textContent);
   state.scored = state.deals.map(scoreDeal);
   state.selectedId = state.scored[0]?.deal[FIELD.id] || null;
   document.getElementById("searchInput").addEventListener("input", (event) => { state.search = event.target.value; render(); });
   document.getElementById("recalculateButton").addEventListener("click", recalculateCurrentDeal);
+  document.getElementById("clearFiltersButton").addEventListener("click", clearAdvancedFilters);
   document.querySelectorAll("[data-health]").forEach((button) => button.addEventListener("click", () => {
     state.health = button.dataset.health;
     document.querySelectorAll("[data-health]").forEach((chip) => chip.classList.remove("is-active"));
     button.classList.add("is-active");
     render();
   }));
+  renderFilterPanel();
   render();
 }
 
