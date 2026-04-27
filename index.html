@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AI-Ассистент сделки</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">A</div>
+          <div>
+            <p class="eyebrow">Axoft MVP</p>
+            <h1>AI-Ассистент сделки</h1>
+          </div>
+        </div>
+
+        <label class="search-box">
+          <span>Поиск</span>
+          <input id="searchInput" type="search" placeholder="ID, клиент, партнер, менеджер">
+        </label>
+
+        <div class="filter-row" id="healthFilters">
+          <button class="chip is-active" data-health="all">Все</button>
+          <button class="chip" data-health="green">Зеленые</button>
+          <button class="chip" data-health="yellow">Желтые</button>
+          <button class="chip" data-health="red">Красные</button>
+        </div>
+
+        <div class="deal-list" id="dealList" aria-label="Список сделок"></div>
+      </aside>
+
+      <main class="workspace">
+        <section class="topbar">
+          <div>
+            <p class="eyebrow">Локальная демо-версия</p>
+            <h2>Оценка сделки по утвержденной методологии</h2>
+          </div>
+          <div class="summary-grid" id="summaryGrid"></div>
+        </section>
+
+        <section class="deal-layout">
+          <article class="deal-card" id="dealCard"></article>
+          <aside class="insight-panel" id="insightPanel"></aside>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
