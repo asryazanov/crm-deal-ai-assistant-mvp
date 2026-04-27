@@ -158,6 +158,11 @@ button { cursor: pointer; }
 .risk-dot.medium { background: #98A2B3; }
 .risk-item strong { display: block; font-weight: 600; }
 .risk-item small { display: block; color: var(--color-muted); margin-top: 4px; line-height: 1.45; }
+.risk-item.critical { background: var(--color-danger-bg); border: 1px solid rgba(185, 28, 28, 0.18); box-shadow: inset 3px 0 0 var(--color-danger); }
+.risk-severity { font-weight: 800; }
+.risk-severity.critical { color: var(--color-danger-text); }
+.risk-severity.high { color: var(--color-warning-text); }
+.risk-severity.medium { color: var(--color-muted); }
 .factor-rating-list { display: grid; gap: 12px; }
 .factor-rating-row { display: grid; grid-template-columns: minmax(0, 1fr) 48px auto; gap: 12px; align-items: center; }
 .factor-rating-row span:first-child { color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -175,10 +180,13 @@ button { cursor: pointer; }
 .tab-panel { display: none; opacity: 0; transition: opacity 200ms ease; }
 .tab-panel.is-active { display: block; opacity: 1; }
 .recommendation-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
-.recommendation-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; gap: 14px; align-items: start; border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; background: #fff; transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
+.recommendation-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; background: #fff; transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease; }
 .recommendation-card:hover { background: #FAFDFD; border-color: var(--color-border-strong); box-shadow: 0 8px 18px rgba(23, 38, 74, 0.08); }
 .rec-index { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; background: var(--color-teal-soft); color: var(--color-primary); font-weight: 800; font-size: 13px; }
 .rec-text { line-height: 1.5; }
+.recommendation-toolbar { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 14px; padding: 14px; border: 1px solid var(--color-border); border-radius: 12px; background: #FAFDFD; }
+.recommendation-toolbar strong { display: block; color: var(--color-navy); }
+.recommendation-toolbar span { display: block; color: var(--color-muted); font-size: 13px; margin-top: 3px; }
 .priority-badge { border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 700; white-space: nowrap; }
 .priority-badge.high { background: var(--color-danger-bg); color: var(--color-danger-text); }
 .priority-badge.medium { background: var(--color-warning-bg); color: var(--color-warning-text); }
@@ -189,6 +197,9 @@ button { cursor: pointer; }
 .task-row { border: 1px solid var(--color-border); border-radius: 10px; padding: 14px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; background: #fff; }
 .task-row strong { display: block; margin-bottom: 5px; }
 .task-meta { color: var(--color-muted); font-size: 13px; line-height: 1.45; }
+.task-checklist { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; color: var(--color-text); }
+.task-checklist li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; align-items: start; font-size: 13px; line-height: 1.35; }
+.task-checklist li::before { content: ""; width: 14px; height: 14px; margin-top: 2px; border: 1px solid var(--color-border-strong); border-radius: 4px; background: #fff; }
 .task-status-select { border: 1px solid var(--color-border); border-radius: var(--radius-button); padding: 8px 9px; background: #fff; color: var(--color-text); }
 .task-empty { color: var(--color-muted); background: #F9FAFB; border: 1px dashed var(--color-border); border-radius: 10px; padding: 14px; }
 .modal-backdrop { position: fixed; inset: 0; display: none; place-items: center; background: rgba(16,24,40,0.42); z-index: 50; padding: 20px; }
@@ -205,6 +216,10 @@ button { cursor: pointer; }
 .form-field input, .form-field textarea, .form-field select { width: 100%; border: 1px solid var(--color-border); border-radius: var(--radius-button); padding: 10px 11px; outline: none; color: var(--color-text); background: #fff; }
 .form-field textarea { min-height: 92px; resize: vertical; }
 .form-field input:focus, .form-field textarea:focus, .form-field select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.checklist-preview { margin-top: 2px; padding: 12px; border: 1px solid var(--color-border); border-radius: 12px; background: #F9FAFB; }
+.checklist-preview ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.checklist-preview li { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; color: var(--color-text); line-height: 1.35; }
+.checklist-preview li::before { content: ""; width: 14px; height: 14px; margin-top: 2px; border: 1px solid var(--color-border-strong); border-radius: 4px; background: #fff; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; padding-top: 4px; }
 .secondary-button { border: 1px solid var(--color-border); border-radius: var(--radius-button); background: #fff; color: var(--color-text); font-weight: 600; padding: 10px 14px; }
 .toast { position: fixed; right: 24px; bottom: 24px; z-index: 60; background: var(--color-text); color: #fff; border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow-card); opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity 180ms ease, transform 180ms ease; }
@@ -294,15 +309,17 @@ button { cursor: pointer; }
 .deal-badges .health-badge { margin-top: 0; min-height: 34px; padding: 7px 11px; font-size: 14px; line-height: 1; }
 .deal-badges .priority-badge { display: inline-flex; align-items: center; min-height: 34px; padding: 7px 11px; font-size: 13px; line-height: 1; max-width: 100%; }
 .deal-detail-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 26px; }
-.deal-detail-item { border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; background: #fff; min-height: 96px; min-width: 0; overflow: hidden; }
-.deal-detail-item span { display: block; color: var(--color-muted); font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
-.deal-detail-item strong { display: block; margin-top: 8px; color: var(--color-text); font-size: clamp(17px, 1.4vw, 20px); line-height: 1.25; overflow-wrap: anywhere; }
+.deal-detail-item { border: 1px solid var(--color-border); border-radius: 12px; padding: 14px; background: #fff; min-height: 88px; min-width: 0; overflow: hidden; }
+.deal-detail-item span { display: block; color: var(--color-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.deal-detail-item strong { display: block; margin-top: 8px; color: var(--color-text); font-size: clamp(15px, 1.15vw, 17px); line-height: 1.2; overflow-wrap: break-word; hyphens: auto; }
 .insight-card { position: sticky; top: 100px; display: grid; gap: 22px; }
 .impact-list { border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden; }
 .impact-row { display: grid; grid-template-columns: minmax(0, 1fr) 54px; gap: 12px; align-items: center; padding: 13px 16px; border-bottom: 1px solid var(--color-border); }
 .impact-row:last-child { border-bottom: 0; }
 .impact-row span { color: var(--color-text); line-height: 1.35; }
 .impact-row strong { text-align: right; font-size: 18px; }
+.impact-row strong.plus { color: var(--color-success-text); }
+.impact-row strong.minus { color: var(--color-danger-text); }
 .action-card { display: grid; gap: 16px; }
 .action-tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--color-border); }
 .action-tabs .tab { padding-bottom: 12px; }
@@ -418,6 +435,10 @@ button { cursor: pointer; }
             <div class="form-field full">
               <label for="taskDealLink">Связь со сделкой</label>
               <input id="taskDealLink" name="dealLink" readonly>
+            </div>
+            <div class="form-field full">
+              <label>Чек-лист</label>
+              <div class="checklist-preview" id="taskChecklistPreview"></div>
             </div>
           </div>
           <div class="modal-actions">
@@ -4801,7 +4822,7 @@ function renderSelectedDeal() {
         </article>
 
         <article class="panel card" style="animation-delay: 0.14s">
-          <div class="panel-heading"><h2>Ключевые риски</h2><span>${selected.risks.length} выявлено · ${high} высоких</span></div>
+          <div class="panel-heading"><h2>Ключевые риски</h2><span>${selected.risks.length} выявлено · ${critical} крит. · ${high} высоких</span></div>
           ${renderRisks(selected.risks)}
         </article>
 
@@ -5068,7 +5089,12 @@ function renderSelectedDeal() {
 
 function renderRisks(risks) {
   if (risks.length === 0) return `<div class="empty-state">Критичных рисков не найдено. Сделку стоит поддерживать в текущем ритме.</div>`;
-  return `<ul class="risk-list">${risks.map((risk) => `<li class="risk-item ${risk.severity}"><span class="risk-dot ${risk.severity}"></span><span><strong>${risk.title}</strong><small>${riskSeverityLabel(risk.severity)} · ${risk.detail}</small></span></li>`).join("")}</ul>`;
+  return `<ul class="risk-list">${sortRisksBySeverity(risks).map((risk) => `<li class="risk-item ${risk.severity}"><span class="risk-dot ${risk.severity}"></span><span><strong>${risk.title}</strong><small><span class="risk-severity ${risk.severity}">${riskSeverityLabel(risk.severity)}</span> · ${risk.detail}</small></span></li>`).join("")}</ul>`;
+}
+
+function sortRisksBySeverity(risks) {
+  const order = { critical: 0, high: 1, medium: 2 };
+  return [...risks].sort((a, b) => (order[a.severity] ?? 9) - (order[b.severity] ?? 9));
 }
 
 function renderInsights(selected) { return selected; }
@@ -5097,9 +5123,19 @@ function renderFactorImpact(selected, mode) {
 
 function renderRecommendationCards(actions, risks, role) {
   const hasCritical = risks.some((risk) => risk.severity === "critical");
-  return `<ol class="recommendation-list">${actions.map((action, index) => {
+  const roleLabel = role === "leader" ? "руководителя" : "менеджера";
+  const taskPriority = hasCritical ? "Высокий" : "Средний";
+  return `
+    <div class="recommendation-toolbar">
+      <div>
+        <strong>Единая задача с чек-листом</strong>
+        <span>${actions.length} пунктов для ${roleLabel} будут добавлены в задачу CRM.</span>
+      </div>
+      <button class="task-create-button" data-task-role="${role}" data-task-priority="${taskPriority}">Поставить задачу в CRM</button>
+    </div>
+    <ol class="recommendation-list">${actions.map((action, index) => {
     const priority = hasCritical || index === 0 ? "Высокий" : "Средний";
-    return `<li class="recommendation-card"><span class="rec-index">${index + 1}</span><span class="rec-text">${action}</span><span class="priority-badge ${priority === "Высокий" ? "high" : "medium"}">${priority}</span><button class="task-create-button" data-task-role="${role}" data-task-index="${index}" data-task-priority="${priority}" data-task-text="${encodeURIComponent(action)}">Создать задачу</button></li>`;
+    return `<li class="recommendation-card"><span class="rec-index">${index + 1}</span><span class="rec-text">${action}</span><span class="priority-badge ${priority === "Высокий" ? "high" : "medium"}">${priority}</span></li>`;
   }).join("")}</ol>`;
 }
 
@@ -5133,22 +5169,34 @@ function defaultDueDate(priority) {
   return date.toISOString().slice(0, 10);
 }
 
-function openTaskModal({ role, action, priority }) {
+function actionsForRole(selected, role) {
+  return role === "leader" ? selected.leaderActions : selected.managerActions;
+}
+
+function openTaskModal({ role, priority }) {
   const selected = getSelectedScoredDeal();
   if (!selected) return;
   const deal = selected.deal;
   const isLeader = role === "leader";
-  state.taskDraft = { role, dealId: deal[FIELD.id] };
-  document.getElementById("taskTitle").value = action.length > 96 ? `${action.slice(0, 93)}...` : action;
-  document.getElementById("taskDescription").value = action;
+  const checklist = actionsForRole(selected, role);
+  const title = isLeader ? "План контроля рисков по сделке" : "План действий по рискам сделки";
+  state.taskDraft = { role, dealId: deal[FIELD.id], checklist };
+  document.getElementById("taskTitle").value = title;
+  document.getElementById("taskDescription").value = `${title}: ${deal[FIELD.client]}`;
   document.getElementById("taskAuthor").value = isLeader ? "Руководитель продаж" : deal[FIELD.manager];
   document.getElementById("taskAssignee").value = deal[FIELD.manager];
   document.getElementById("taskDueDate").value = defaultDueDate(priority);
   document.getElementById("taskPriority").value = priority;
   document.getElementById("taskDealLink").value = `${deal[FIELD.id]} · ${deal[FIELD.client]}`;
+  document.getElementById("taskChecklistPreview").innerHTML = renderChecklistPreview(checklist);
   document.getElementById("taskModal").classList.add("is-open");
   document.getElementById("taskModal").setAttribute("aria-hidden", "false");
   document.getElementById("taskTitle").focus();
+}
+
+function renderChecklistPreview(checklist) {
+  if (!checklist.length) return `<span class="muted">Нет пунктов чек-листа.</span>`;
+  return `<strong>${checklist.length} пунктов</strong><ul>${checklist.map((item) => `<li>${item}</li>`).join("")}</ul>`;
 }
 
 function closeTaskModal() {
@@ -5172,6 +5220,7 @@ function createTaskFromForm(event) {
     assignee: document.getElementById("taskAssignee").value.trim(),
     dueDate: document.getElementById("taskDueDate").value,
     priority: document.getElementById("taskPriority").value,
+    checklist: state.taskDraft.checklist || [],
     status: "Новая",
     createdAt: new Date().toISOString()
   };
@@ -5185,13 +5234,14 @@ function createTaskFromForm(event) {
 function renderCrmTasks(dealId) {
   const tasks = getTasksForDeal(dealId);
   if (!tasks.length) {
-    return `<div class="task-empty">Созданных задач по этой сделке пока нет. Нажмите “Создать задачу” у рекомендации.</div>`;
+    return `<div class="task-empty">Созданных задач по этой сделке пока нет. Нажмите “Поставить задачу в CRM” на вкладке рекомендаций.</div>`;
   }
   return `<div class="task-list">${tasks.map((task) => `
     <article class="task-row">
       <div>
         <strong>${task.title}</strong>
         <div class="task-meta">${task.id} · ${task.assignee} · срок ${formatDate(task.dueDate)} · ${task.priority}</div>
+        ${task.checklist?.length ? `<ul class="task-checklist">${task.checklist.map((item) => `<li>${item}</li>`).join("")}</ul>` : ""}
       </div>
       <select class="task-status-select" data-task-id="${task.id}" aria-label="Статус задачи ${task.id}">
         ${["Новая", "В работе", "Выполнена"].map((status) => `<option ${task.status === status ? "selected" : ""}>${status}</option>`).join("")}
@@ -5211,8 +5261,7 @@ function wireRecommendationButtons() {
     button.addEventListener("click", () => {
       openTaskModal({
         role: button.dataset.taskRole,
-        priority: button.dataset.taskPriority,
-        action: decodeURIComponent(button.dataset.taskText)
+        priority: button.dataset.taskPriority
       });
     });
   });
