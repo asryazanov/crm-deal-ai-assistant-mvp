@@ -263,14 +263,16 @@ button { cursor: pointer; }
 .deal-workspace { min-width: 0; display: grid; gap: 20px; }
 .workspace-header { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(520px, 0.9fr); gap: 24px; align-items: end; }
 .workspace-header h1 { margin: 8px 0 0; font-size: 28px; line-height: 1.15; color: var(--color-navy); letter-spacing: -0.01em; }
-.filter-strip { position: sticky; top: 92px; z-index: 40; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px 16px; border-top: 0; overflow: visible; }
+.filter-strip { position: sticky; top: 92px; z-index: 40; display: grid; grid-template-columns: 260px minmax(0, 1fr) max-content; gap: 16px; align-items: center; padding: 14px 16px; border-top: 0; overflow: visible; }
 .filter-strip-meta { display: grid; gap: 3px; min-width: 150px; }
 .filter-strip-meta strong { color: var(--color-navy); }
 .filter-strip-meta span { color: var(--color-muted); font-size: 12px; }
-.filter-dropdown-row { display: flex; gap: 10px; align-items: center; flex-wrap: nowrap; min-width: 0; overflow-x: auto; padding: 4px; scrollbar-width: thin; }
+.filter-dropdown-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; min-width: 0; overflow: visible; padding: 0; }
 .filter-dropdown { position: relative; z-index: 41; }
 .filter-dropdown summary { list-style: none; cursor: pointer; border: 1px solid var(--color-border); border-radius: 999px; padding: 9px 12px; min-width: 128px; max-width: 220px; background: #fff; color: var(--color-text); font-weight: 750; display: flex; justify-content: space-between; gap: 10px; align-items: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .filter-dropdown summary::-webkit-details-marker { display: none; }
+.filter-dropdown summary:focus { outline: none; }
+.filter-dropdown summary:focus-visible { border-color: var(--color-primary); box-shadow: 0 0 0 4px rgba(1,105,111,0.10); }
 .filter-dropdown summary::after { content: "⌄"; color: var(--color-primary); font-weight: 900; }
 .filter-dropdown[open] summary { border-color: var(--color-primary); box-shadow: 0 0 0 4px rgba(1,105,111,0.10); }
 .filter-menu { position: absolute; z-index: 80; top: calc(100% + 8px); left: 0; width: min(300px, calc(100vw - 48px)); padding: 12px; background: #fff; border: 1px solid var(--color-border); border-radius: 14px; box-shadow: var(--shadow-strong); display: grid; gap: 10px; }
@@ -288,7 +290,9 @@ button { cursor: pointer; }
 .score-donut-inner { position: relative; z-index: 1; display: grid; justify-items: center; gap: 2px; }
 .score-donut-value { font-size: clamp(34px, 3.5vw, 42px); font-weight: 900; color: var(--color-text); letter-spacing: -0.03em; }
 .score-donut-label { color: var(--color-muted); font-size: 13px; font-weight: 800; }
-.deal-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.deal-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; align-items: center; max-width: 100%; }
+.deal-badges .health-badge { margin-top: 0; min-height: 34px; padding: 7px 11px; font-size: 14px; line-height: 1; }
+.deal-badges .priority-badge { display: inline-flex; align-items: center; min-height: 34px; padding: 7px 11px; font-size: 13px; line-height: 1; max-width: 100%; }
 .deal-detail-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 26px; }
 .deal-detail-item { border: 1px solid var(--color-border); border-radius: 12px; padding: 16px; background: #fff; min-height: 96px; min-width: 0; overflow: hidden; }
 .deal-detail-item span { display: block; color: var(--color-muted); font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
