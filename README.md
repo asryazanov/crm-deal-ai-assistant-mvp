@@ -24,9 +24,7 @@ http://127.0.0.1:8787/
 
 ## Структура
 
-- `index.html` — основная web-страница.
-- `styles.css` — лаконичный Notion-like дизайн.
-- `app.js` — scoring engine, риски, здоровье сделки и рекомендации.
+- `index.html` — однофайловая web-страница: встроенные CSS, JS, scoring engine и демо-датасет.
 - `data/deals.json` — тестовый датасет сделок для MVP.
 - `docs/mini-tz.md` — мини-ТЗ и формула скоринга.
 - `Axoft_Deal_Dataset_v1.0.xlsx` — исходный тестовый датасет.

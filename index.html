@@ -4,50 +4,4857 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>AI-Ассистент сделки</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+/* CSS: Design tokens */
+:root {
+  --color-bg: #F7F8FA;
+  --color-surface: #FFFFFF;
+  --color-border: #E4E7EC;
+  --color-text: #101828;
+  --color-muted: #667085;
+  --color-primary: #2563EB;
+  --color-primary-hover: #1D4ED8;
+  --color-success: #12B76A;
+  --color-success-bg: #ECFDF5;
+  --color-success-text: #027A48;
+  --color-warning: #F79009;
+  --color-warning-bg: #FFFAEB;
+  --color-warning-text: #B54708;
+  --color-danger: #F04438;
+  --color-danger-bg: #FEF3F2;
+  --color-danger-text: #B42318;
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --shadow-card: 0 1px 3px rgba(16,24,40,0.1), 0 1px 2px rgba(16,24,40,0.06);
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0;
+}
+button, input { font: inherit; }
+button { cursor: pointer; }
+.app-header {
+  height: 64px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.header-inner {
+  width: min(1200px, calc(100% - 48px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr minmax(220px, auto) auto;
+  align-items: center;
+  gap: 20px;
+}
+.system-title { font-size: 18px; font-weight: 700; }
+.selected-deal { color: var(--color-muted); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.primary-button {
+  border: 0;
+  border-radius: var(--radius-button);
+  background: var(--color-primary);
+  color: #fff;
+  font-weight: 600;
+  padding: 10px 14px;
+  min-width: 128px;
+  transition: background 150ms ease, transform 150ms ease;
+}
+.primary-button:hover { background: var(--color-primary-hover); }
+.primary-button:active { transform: translateY(1px); }
+.primary-button .spinner { display: none; width: 14px; height: 14px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.45); border-top-color: #fff; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: -2px; }
+.primary-button.is-loading .spinner { display: inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.page { width: min(1200px, calc(100% - 48px)); margin: 24px auto; display: grid; gap: 16px; }
+.control-card, .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
+.control-card { padding: 20px 24px; display: grid; gap: 16px; }
+.control-top { display: grid; grid-template-columns: minmax(240px, 1fr) auto; gap: 16px; align-items: end; }
+.search-box { display: grid; gap: 8px; }
+.label, .search-box span { color: var(--color-muted); font-size: 12px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; }
+.search-box input { border: 1px solid var(--color-border); border-radius: var(--radius-button); padding: 11px 12px; outline: none; color: var(--color-text); }
+.search-box input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { border: 1px solid var(--color-border); border-radius: 999px; background: #fff; color: var(--color-muted); padding: 8px 12px; font-weight: 600; transition: background 150ms ease, border-color 150ms ease, color 150ms ease; }
+.chip:hover { background: #F9FAFB; }
+.chip.is-active { border-color: var(--color-primary); color: var(--color-primary); background: #EFF6FF; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.summary-item { border: 1px solid var(--color-border); border-radius: 10px; padding: 12px; background: #FCFCFD; }
+.summary-item span { color: var(--color-muted); font-size: 12px; }
+.summary-item strong { display: block; margin-top: 4px; font-size: 18px; }
+.deal-list { display: grid; gap: 8px; max-height: 280px; overflow: auto; }
+.deal-row { width: 100%; border: 1px solid var(--color-border); border-radius: 10px; background: #fff; padding: 10px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; text-align: left; transition: background 150ms ease, border-color 150ms ease, transform 150ms ease; }
+.deal-row:hover, .deal-row.is-selected { background: #F9FAFB; border-color: #CBD5E1; }
+.deal-row-main { min-width: 0; }
+.deal-row-main strong, .deal-row-main small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deal-row-main small { color: var(--color-muted); margin-top: 2px; }
+.deal-row-score { font-weight: 700; }
+.deal-row-score.green, .metric-number.green { color: var(--color-success-text); }
+.deal-row-score.yellow, .metric-number.yellow { color: var(--color-warning-text); }
+.deal-row-score.red, .metric-number.red { color: var(--color-danger-text); }
+.hero-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.card { padding: 24px; animation: fadeInUp 0.3s ease forwards; opacity: 0; }
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.metric-card { min-height: 172px; display: flex; flex-direction: column; justify-content: space-between; }
+.metric-number { font-size: 32px; font-weight: 700; margin-top: 14px; }
+.metric-number.compact { font-size: 28px; }
+.metric-card p { color: var(--color-muted); margin: 12px 0 0; line-height: 1.45; }
+.progress-track { height: 8px; background: #EAECF0; border-radius: 999px; overflow: hidden; margin-top: 14px; }
+.progress-fill { height: 100%; border-radius: inherit; width: 0; transition: width 0.8s ease-out; }
+.progress-fill.green { background: var(--color-success); }
+.progress-fill.yellow { background: var(--color-warning); }
+.progress-fill.red { background: var(--color-danger); }
+.health-badge { display: inline-flex; align-items: center; gap: 8px; width: max-content; margin-top: 18px; border-radius: 999px; padding: 8px 11px; font-weight: 700; }
+.health-badge.green { color: var(--color-success-text); background: var(--color-success-bg); }
+.health-badge.yellow { color: var(--color-warning-text); background: var(--color-warning-bg); }
+.health-badge.red { color: var(--color-danger-text); background: var(--color-danger-bg); }
+.status-dot, .risk-dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; flex: 0 0 auto; }
+.status-dot.green { background: var(--color-success); }
+.status-dot.yellow { background: var(--color-warning); }
+.status-dot.red { background: var(--color-danger); }
+.context-card { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.context-card strong { display: block; margin-top: 8px; font-size: 15px; line-height: 1.35; }
+.content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.panel-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 16px; }
+.panel-heading h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.panel-heading span { color: var(--color-muted); font-size: 12px; font-weight: 600; }
+.risk-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.risk-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px; padding: 12px; border-radius: 10px; transition: background 150ms ease; }
+.risk-item:hover { background: #F9FAFB; }
+.risk-dot.critical { background: var(--color-danger); }
+.risk-dot.high { background: var(--color-warning); }
+.risk-dot.medium { background: #98A2B3; }
+.risk-item strong { display: block; font-weight: 600; }
+.risk-item small { display: block; color: var(--color-muted); margin-top: 4px; line-height: 1.45; }
+.factor-rating-list { display: grid; gap: 12px; }
+.factor-rating-row { display: grid; grid-template-columns: minmax(0, 1fr) 48px auto; gap: 12px; align-items: center; }
+.factor-rating-row span:first-child { color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.factor-rating-row strong.plus, .weight-row .plus { color: var(--color-success-text); }
+.factor-rating-row strong.minus, .weight-row .minus { color: var(--color-danger-text); }
+.dot-rating { display: inline-flex; gap: 4px; }
+.dot-rating i { width: 8px; height: 8px; border-radius: 999px; background: #EAECF0; }
+.dot-rating i.filled { background: var(--color-primary); }
+.empty-state { color: var(--color-muted); background: #F9FAFB; border: 1px dashed var(--color-border); border-radius: 10px; padding: 14px; }
+.recommendations-card { padding-bottom: 18px; }
+.tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--color-border); margin: -4px -4px 18px; padding: 0 4px; }
+.tab { border: 0; background: transparent; color: var(--color-muted); font-weight: 600; padding: 0 0 12px; border-bottom: 2px solid transparent; transition: color 150ms ease, border-color 150ms ease; }
+.tab:hover, .tab.is-active { color: var(--color-primary); }
+.tab.is-active { border-bottom-color: var(--color-primary); }
+.tab-panel { display: none; opacity: 0; transition: opacity 200ms ease; }
+.tab-panel.is-active { display: block; opacity: 1; }
+.recommendation-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.recommendation-card { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; border: 1px solid var(--color-border); border-radius: 10px; padding: 14px; background: #fff; transition: background 150ms ease, border-color 150ms ease; }
+.recommendation-card:hover { background: #F9FAFB; border-color: #CBD5E1; }
+.rec-index { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 999px; background: #EFF6FF; color: var(--color-primary); font-weight: 700; font-size: 12px; }
+.rec-text { line-height: 1.5; }
+.priority-badge { border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.priority-badge.high { background: var(--color-danger-bg); color: var(--color-danger-text); }
+.priority-badge.medium { background: var(--color-warning-bg); color: var(--color-warning-text); }
+.methodology summary { cursor: pointer; font-weight: 600; font-size: 16px; }
+.methodology-body { margin-top: 16px; color: var(--color-muted); }
+.weights-table { display: grid; gap: 1px; border: 1px solid var(--color-border); border-radius: 10px; overflow: hidden; margin-top: 14px; }
+.weight-row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 64px; gap: 12px; padding: 10px 12px; background: #fff; color: var(--color-text); align-items: center; }
+.weight-row span { color: var(--color-muted); font-size: 12px; }
+.weight-row strong { font-weight: 500; }
+.weight-row em { font-style: normal; text-align: right; font-weight: 700; }
+@media (max-width: 768px) {
+  .header-inner, .page { width: calc(100% - 32px); }
+  .header-inner { grid-template-columns: 1fr; gap: 4px; height: auto; padding: 12px 0; }
+  .app-header { height: auto; }
+  .primary-button { width: 100%; margin-top: 8px; }
+  .control-top, .hero-grid, .content-grid, .context-card, .summary-grid { grid-template-columns: 1fr; }
+  .page { margin: 16px auto; }
+  .card, .control-card { padding: 18px; }
+  .weight-row { grid-template-columns: 1fr; }
+  .recommendation-card { grid-template-columns: auto minmax(0, 1fr); }
+  .priority-badge { grid-column: 2; width: max-content; }
+}
+</style>
   </head>
   <body>
-    <div class="app-shell">
-      <aside class="sidebar">
-        <div class="brand">
-          <div class="brand-mark">A</div>
-          <div>
-            <p class="eyebrow">Axoft MVP</p>
-            <h1>AI-Ассистент сделки</h1>
+    <!-- HTML: Header -->
+    <header class="app-header">
+      <div class="header-inner">
+        <div class="system-title">AI-Ассистент сделки</div>
+        <div class="selected-deal" id="selectedDealName">Загрузка сделки</div>
+        <button class="primary-button" id="recalculateButton"><span class="spinner"></span>Пересчитать</button>
+      </div>
+    </header>
+
+    <!-- HTML: Controls and workspace -->
+    <main class="page">
+      <section class="control-card">
+        <div class="control-top">
+          <label class="search-box">
+            <span>Поиск сделки</span>
+            <input id="searchInput" type="search" placeholder="ID, клиент, партнер, менеджер">
+          </label>
+          <div class="filter-row" id="healthFilters">
+            <button class="chip is-active" data-health="all">Все</button>
+            <button class="chip" data-health="green">Зеленые</button>
+            <button class="chip" data-health="yellow">Желтые</button>
+            <button class="chip" data-health="red">Красные</button>
           </div>
         </div>
-
-        <label class="search-box">
-          <span>Поиск</span>
-          <input id="searchInput" type="search" placeholder="ID, клиент, партнер, менеджер">
-        </label>
-
-        <div class="filter-row" id="healthFilters">
-          <button class="chip is-active" data-health="all">Все</button>
-          <button class="chip" data-health="green">Зеленые</button>
-          <button class="chip" data-health="yellow">Желтые</button>
-          <button class="chip" data-health="red">Красные</button>
-        </div>
-
+        <div class="summary-grid" id="summaryGrid"></div>
         <div class="deal-list" id="dealList" aria-label="Список сделок"></div>
-      </aside>
+      </section>
+      <div id="dealCard"></div>
+    </main>
 
-      <main class="workspace">
-        <section class="topbar">
-          <div>
-            <p class="eyebrow">Локальная демо-версия</p>
-            <h2>Оценка сделки по утвержденной методологии</h2>
-          </div>
-          <div class="summary-grid" id="summaryGrid"></div>
-        </section>
+    <!-- HTML: Embedded local dataset -->
+    <script id="deals-data" type="application/json">[
+  {
+    "ID сделки": "DEAL-0001",
+    "Дата создания": "30.06.2025",
+    "Менеджер Axoft": "Лебедева О.В.",
+    "Клиент": "Россельхозбанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "SMB",
+    "Вендор": "DатаРу",
+    "Продукт / Решение": "DатаРу Сервер",
+    "Партнёр": "Диалог ИТ",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 1199000,
+    "Маржа (руб.)": 65945,
+    "Маржа (%)": 5.5,
+    "Возраст сделки (дней)": 56,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 8,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 8,
+    "Win rate партнёра (%)": 81,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Фролов А.И.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 78,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 9,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы"
+  },
+  {
+    "ID сделки": "DEAL-0002",
+    "Дата создания": "21.02.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "ВТБ",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "UserGate",
+    "Продукт / Решение": "UserGate UTM",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 117000000,
+    "Маржа (руб.)": 10530000,
+    "Маржа (%)": 9,
+    "Возраст сделки (дней)": 242,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 19,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 24,
+    "Win rate партнёра (%)": 44,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 29,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 443,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0003",
+    "Дата создания": "22.11.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "Фортум",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "AXILON",
+    "Продукт / Решение": "AXILON CPM",
+    "Партнёр": "Техносерв",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 188000000,
+    "Маржа (руб.)": 17108000,
+    "Маржа (%)": 9.1,
+    "Возраст сделки (дней)": 159,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 3,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 45,
+    "Win rate партнёра (%)": 38,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 23,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 249,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 86,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0004",
+    "Дата создания": "11.12.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "Пятёрочка",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "DатаРу",
+    "Продукт / Решение": "DатаРу Коммутатор",
+    "Партнёр": "Сервионика",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 35000000,
+    "Маржа (руб.)": 3430000,
+    "Маржа (%)": 9.8,
+    "Возраст сделки (дней)": 158,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 30,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 44,
+    "Win rate партнёра (%)": 70,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 58,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 47,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 47,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0005",
+    "Дата создания": "01.10.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "Металлоинвест",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Гравитон",
+    "Продукт / Решение": "Гравитон Сервер",
+    "Партнёр": "Softline",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 268000000,
+    "Маржа (руб.)": 25460000,
+    "Маржа (%)": 9.5,
+    "Возраст сделки (дней)": 221,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 8,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 2,
+    "Win rate партнёра (%)": 69,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 16,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 318,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 78,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Инициировать пилотный проект для снижения рисков клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0006",
+    "Дата создания": "23.05.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Билайн",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Kaspersky",
+    "Продукт / Решение": "Kaspersky KATA",
+    "Партнёр": "Ланит",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 11000000,
+    "Маржа (руб.)": 924000,
+    "Маржа (%)": 8.4,
+    "Возраст сделки (дней)": 51,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 17,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 42,
+    "Win rate партнёра (%)": 73,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 1,
+    "История связки Партнёр-Клиент (% выигранных)": 54,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 43,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0007",
+    "Дата создания": "06.11.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Перекрёсток",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Positive Technologies",
+    "Продукт / Решение": "PT Sandbox",
+    "Партнёр": "Техносерв",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 245000000,
+    "Маржа (руб.)": 21560000,
+    "Маржа (%)": 8.8,
+    "Возраст сделки (дней)": 236,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 3,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 37,
+    "Win rate партнёра (%)": 83,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 52,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 410,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы"
+  },
+  {
+    "ID сделки": "DEAL-0008",
+    "Дата создания": "16.10.2025",
+    "Менеджер Axoft": "Сидоров К.Н.",
+    "Клиент": "ЭР-Телеком",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Код Безопасности",
+    "Продукт / Решение": "Континент TLS",
+    "Партнёр": "Астерос",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 1434000,
+    "Маржа (руб.)": 110418,
+    "Маржа (%)": 7.7,
+    "Возраст сделки (дней)": 106,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 3,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 17,
+    "Win rate партнёра (%)": 67,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 5,
+    "История связки Партнёр-Клиент (% выигранных)": 71,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 14,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0009",
+    "Дата создания": "16.08.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Магнитогорский МК",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "OpenYard",
+    "Продукт / Решение": "OpenYard Сервер",
+    "Партнёр": "Открытые технологии",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 498000000,
+    "Маржа (руб.)": 33864000,
+    "Маржа (%)": 6.8,
+    "Возраст сделки (дней)": 62,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 10,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 30,
+    "Win rate партнёра (%)": 56,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Фролов А.И.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 85,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 465,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы"
+  },
+  {
+    "ID сделки": "DEAL-0010",
+    "Дата создания": "15.02.2025",
+    "Менеджер Axoft": "Сидоров К.Н.",
+    "Клиент": "Tele2",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "AXILON",
+    "Продукт / Решение": "AXILON CPM",
+    "Партнёр": "Астерос",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 433000000,
+    "Маржа (руб.)": 31176000,
+    "Маржа (%)": 7.2,
+    "Возраст сделки (дней)": 149,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 11,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 21,
+    "Win rate партнёра (%)": 33,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 5,
+    "История связки Партнёр-Клиент (% выигранных)": 4,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 232,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 92,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента"
+  },
+  {
+    "ID сделки": "DEAL-0011",
+    "Дата создания": "28.10.2025",
+    "Менеджер Axoft": "Иванов А.В.",
+    "Клиент": "Метро",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Postgres Pro",
+    "Продукт / Решение": "Postgres Pro Enterprise",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 385000000,
+    "Маржа (руб.)": 29260000,
+    "Маржа (%)": 7.6,
+    "Возраст сделки (дней)": 219,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 17,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 13,
+    "Win rate партнёра (%)": 26,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 9,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 96,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 70,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0012",
+    "Дата создания": "04.05.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Нетбайнет",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "SMB",
+    "Вендор": "КИБЕРПРОТЕКТ",
+    "Продукт / Решение": "Кибер Инфраструктура",
+    "Партнёр": "Ай-Теко",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 4192000,
+    "Маржа (руб.)": 259904,
+    "Маржа (%)": 6.2,
+    "Возраст сделки (дней)": 244,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 15,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 17,
+    "Win rate партнёра (%)": 63,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Фролов А.И.",
+    "Кол-во участников команды": 5,
+    "История связки Партнёр-Клиент (% выигранных)": 24,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 2,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 69,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0013",
+    "Дата создания": "16.03.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "Магнитогорский МК",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "OpenYard",
+    "Продукт / Решение": "OpenYard СХД",
+    "Партнёр": "Сервионика",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 113000000,
+    "Маржа (руб.)": 6102000,
+    "Маржа (%)": 5.4,
+    "Возраст сделки (дней)": 54,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 24,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 36,
+    "Win rate партнёра (%)": 51,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Беляев К.С.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 34,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 252,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 50,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0014",
+    "Дата создания": "17.01.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "Скартел",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Postgres Pro",
+    "Продукт / Решение": "Postgres Pro 1C",
+    "Партнёр": "Ай-Теко",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 4901000,
+    "Маржа (руб.)": 343070,
+    "Маржа (%)": 7,
+    "Возраст сделки (дней)": 72,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 31,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 28,
+    "Win rate партнёра (%)": 32,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 6,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 3,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 25,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0015",
+    "Дата создания": "09.01.2025",
+    "Менеджер Axoft": "Соколова Н.Д.",
+    "Клиент": "НЛМК",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Avanpost",
+    "Продукт / Решение": "Avanpost IDM",
+    "Партнёр": "Инфосистемы Джет",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 40000000,
+    "Маржа (руб.)": 2400000,
+    "Маржа (%)": 6,
+    "Возраст сделки (дней)": 117,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 4,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 10,
+    "Win rate партнёра (%)": 63,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Беляев К.С.",
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 77,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 41,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0016",
+    "Дата создания": "05.05.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "Квадра",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "ГК Солар",
+    "Продукт / Решение": "Solar JSOC",
+    "Партнёр": "ICL",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 259000000,
+    "Маржа (руб.)": 25382000,
+    "Маржа (%)": 9.8,
+    "Возраст сделки (дней)": 127,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 15,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 5,
+    "Win rate партнёра (%)": 78,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 63,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 204,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 56,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0017",
+    "Дата создания": "03.02.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Росреестр",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "ГК Солар",
+    "Продукт / Решение": "Solar inRights",
+    "Партнёр": "Техносерв",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 289000000,
+    "Маржа (руб.)": 24276000,
+    "Маржа (%)": 8.4,
+    "Возраст сделки (дней)": 43,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 29,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 36,
+    "Win rate партнёра (%)": 48,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Фролов А.И.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 51,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 137,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0018",
+    "Дата создания": "13.09.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Россельхозбанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Гравитон",
+    "Продукт / Решение": "Гравитон Рабочая станция",
+    "Партнёр": "Техносерв",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 224000000,
+    "Маржа (руб.)": 22400000,
+    "Маржа (%)": 10,
+    "Возраст сделки (дней)": 177,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 16,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 25,
+    "Win rate партнёра (%)": 68,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 21,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 42,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 87,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0019",
+    "Дата создания": "26.05.2025",
+    "Менеджер Axoft": "Лебедева О.В.",
+    "Клиент": "МегаФон",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Гарда",
+    "Продукт / Решение": "Гарда DBF",
+    "Партнёр": "Открытые технологии",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 200000000,
+    "Маржа (руб.)": 19800000,
+    "Маржа (%)": 9.9,
+    "Возраст сделки (дней)": 151,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 22,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 18,
+    "Win rate партнёра (%)": 25,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 1,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 293,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0020",
+    "Дата создания": "09.02.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "ЭР-Телеком",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "SMB",
+    "Вендор": "AXILON",
+    "Продукт / Решение": "AXILON CPM",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 2231000,
+    "Маржа (руб.)": 211945,
+    "Маржа (%)": 9.5,
+    "Возраст сделки (дней)": 297,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 43,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 43,
+    "Win rate партнёра (%)": 24,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 5,
+    "История связки Партнёр-Клиент (% выигранных)": 18,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 12,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 37,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0021",
+    "Дата создания": "11.10.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "ФСС",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Biplane",
+    "Продукт / Решение": "Biplane Analytics",
+    "Партнёр": "Ай-Теко",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 9000000,
+    "Маржа (руб.)": 657000,
+    "Маржа (%)": 7.3,
+    "Возраст сделки (дней)": 162,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 0,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 19,
+    "Win rate партнёра (%)": 59,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 69,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 74,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0022",
+    "Дата создания": "11.02.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "Tele2",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Группа Астра",
+    "Продукт / Решение": "Tantor SE",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 106000000,
+    "Маржа (руб.)": 6466000,
+    "Маржа (%)": 6.1,
+    "Возраст сделки (дней)": 75,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 39,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 35,
+    "Win rate партнёра (%)": 40,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 27,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 403,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 39,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0023",
+    "Дата создания": "19.05.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Минцифры",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Код Безопасности",
+    "Продукт / Решение": "Континент TLS",
+    "Партнёр": "Сервионика",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 448000000,
+    "Маржа (руб.)": 35392000,
+    "Маржа (%)": 7.9,
+    "Возраст сделки (дней)": 201,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 4,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 41,
+    "Win rate партнёра (%)": 39,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Беляев К.С.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 46,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 389,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 41,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента"
+  },
+  {
+    "ID сделки": "DEAL-0024",
+    "Дата создания": "09.04.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "СИБУР",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "AXILON",
+    "Продукт / Решение": "AXILON CPM",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 214000000,
+    "Маржа (руб.)": 16478000,
+    "Маржа (%)": 7.7,
+    "Возраст сделки (дней)": 259,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 20,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 30,
+    "Win rate партнёра (%)": 35,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 21,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 387,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 64,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0025",
+    "Дата создания": "30.05.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Ростелеком",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "RVi Group",
+    "Продукт / Решение": "RVi СКУД",
+    "Партнёр": "Инфосистемы Джет",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 238000000,
+    "Маржа (руб.)": 20230000,
+    "Маржа (%)": 8.5,
+    "Возраст сделки (дней)": 258,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 11,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 37,
+    "Win rate партнёра (%)": 45,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Егоров М.П.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 26,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 224,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 85,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0026",
+    "Дата создания": "02.04.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "МегаФон",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Цифровые решения",
+    "Продукт / Решение": "ЦР NGFW",
+    "Партнёр": "Ай-Теко",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 13000000,
+    "Маржа (руб.)": 676000,
+    "Маржа (%)": 5.2,
+    "Возраст сделки (дней)": 193,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 7,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 23,
+    "Win rate партнёра (%)": 72,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 52,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 3,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 52,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0027",
+    "Дата создания": "14.06.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Почта России",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "OpenYard",
+    "Продукт / Решение": "OpenYard СХД",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 291000000,
+    "Маржа (руб.)": 18042000,
+    "Маржа (%)": 6.2,
+    "Возраст сделки (дней)": 260,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 10,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 25,
+    "Win rate партнёра (%)": 62,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 17,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 153,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 88,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0028",
+    "Дата создания": "07.07.2025",
+    "Менеджер Axoft": "Сидоров К.Н.",
+    "Клиент": "МКБ",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Kaspersky",
+    "Продукт / Решение": "Kaspersky Endpoint Security",
+    "Партнёр": "Марвел-Дистрибуция",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 143000000,
+    "Маржа (руб.)": 12584000,
+    "Маржа (%)": 8.8,
+    "Возраст сделки (дней)": 194,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 22,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 36,
+    "Win rate партнёра (%)": 23,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 17,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 480,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 34,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0029",
+    "Дата создания": "02.10.2025",
+    "Менеджер Axoft": "Лебедева О.В.",
+    "Клиент": "Роскосмос",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Код Безопасности",
+    "Продукт / Решение": "Соболь",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 147000000,
+    "Маржа (руб.)": 9555000,
+    "Маржа (%)": 6.5,
+    "Возраст сделки (дней)": 214,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 13,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 36,
+    "Win rate партнёра (%)": 62,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 15,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 380,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 54,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0030",
+    "Дата создания": "26.01.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "X5 Retail Group",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Группа Астра",
+    "Продукт / Решение": "Tantor SE",
+    "Партнёр": "Марвел-Дистрибуция",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 339000000,
+    "Маржа (руб.)": 31527000,
+    "Маржа (%)": 9.3,
+    "Возраст сделки (дней)": 34,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 27,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 13,
+    "Win rate партнёра (%)": 44,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Фролов А.И.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 70,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 50,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0031",
+    "Дата создания": "15.10.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Квадра",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Positive Technologies",
+    "Продукт / Решение": "MaxPatrol VM",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 148000000,
+    "Маржа (руб.)": 14356000,
+    "Маржа (%)": 9.7,
+    "Возраст сделки (дней)": 23,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 28,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 24,
+    "Win rate партнёра (%)": 27,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 16,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 198,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 35,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0032",
+    "Дата создания": "22.07.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "ВТБ",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Гравитон",
+    "Продукт / Решение": "Гравитон Ноутбук",
+    "Партнёр": "Softline",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 1137000,
+    "Маржа (руб.)": 105741,
+    "Маржа (%)": 9.3,
+    "Возраст сделки (дней)": 226,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 5,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 40,
+    "Win rate партнёра (%)": 84,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 73,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 2,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подтвердить наличие бюджета у клиента"
+  },
+  {
+    "ID сделки": "DEAL-0033",
+    "Дата создания": "11.06.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "Квадра",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Alpha Systems",
+    "Продукт / Решение": "RedCheck",
+    "Партнёр": "Softline",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 1061000,
+    "Маржа (руб.)": 84880,
+    "Маржа (%)": 8,
+    "Возраст сделки (дней)": 127,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 2,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 38,
+    "Win rate партнёра (%)": 60,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 38,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 14,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 59,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента"
+  },
+  {
+    "ID сделки": "DEAL-0034",
+    "Дата создания": "10.06.2025",
+    "Менеджер Axoft": "Соколова Н.Д.",
+    "Клиент": "Транстелеком",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Гравитон",
+    "Продукт / Решение": "Гравитон Рабочая станция",
+    "Партнёр": "Открытые технологии",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 42000000,
+    "Маржа (руб.)": 2982000,
+    "Маржа (%)": 7.1,
+    "Возраст сделки (дней)": 9,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 3,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 35,
+    "Win rate партнёра (%)": 43,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 67,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 81,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 77,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0035",
+    "Дата создания": "23.04.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "МегаФон",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Цифровые решения",
+    "Продукт / Решение": "ЦР NGFW",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 25000000,
+    "Маржа (руб.)": 2300000,
+    "Маржа (%)": 9.2,
+    "Возраст сделки (дней)": 34,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 17,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 32,
+    "Win rate партнёра (%)": 72,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 72,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 3,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 71,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0036",
+    "Дата создания": "22.09.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "Ашан",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "RVi Group",
+    "Продукт / Решение": "RVi Видеонаблюдение",
+    "Партнёр": "Техносерв",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 255000000,
+    "Маржа (руб.)": 25245000,
+    "Маржа (%)": 9.9,
+    "Возраст сделки (дней)": 73,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 26,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 27,
+    "Win rate партнёра (%)": 41,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 14,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 348,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 38,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0037",
+    "Дата создания": "18.02.2025",
+    "Менеджер Axoft": "Сидоров К.Н.",
+    "Клиент": "Роснефть",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Biplane",
+    "Продукт / Решение": "Biplane BI",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 212000000,
+    "Маржа (руб.)": 16748000,
+    "Маржа (%)": 7.9,
+    "Возраст сделки (дней)": 173,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 1,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 42,
+    "Win rate партнёра (%)": 90,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Борисова Ю.К.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 66,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 373,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Сделка в хорошем состоянии - поддерживать текущий темп"
+  },
+  {
+    "ID сделки": "DEAL-0038",
+    "Дата создания": "15.11.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "ЭР-Телеком",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Postgres Pro",
+    "Продукт / Решение": "Postgres Pro Standard",
+    "Партнёр": "Softline",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 171000000,
+    "Маржа (руб.)": 15048000,
+    "Маржа (%)": 8.8,
+    "Возраст сделки (дней)": 247,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 8,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 39,
+    "Win rate партнёра (%)": 88,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 80,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 406,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Сделка в хорошем состоянии - поддерживать текущий темп"
+  },
+  {
+    "ID сделки": "DEAL-0039",
+    "Дата создания": "01.12.2025",
+    "Менеджер Axoft": "Сидоров К.Н.",
+    "Клиент": "ФСС",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "OpenYard",
+    "Продукт / Решение": "OpenYard Сервер",
+    "Партнёр": "Ай-Теко",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 234000000,
+    "Маржа (руб.)": 15444000,
+    "Маржа (%)": 6.6,
+    "Возраст сделки (дней)": 88,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 40,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 30,
+    "Win rate партнёра (%)": 45,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 5,
+    "История связки Партнёр-Клиент (% выигранных)": 28,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 431,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 30,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0040",
+    "Дата создания": "04.03.2025",
+    "Менеджер Axoft": "Лебедева О.В.",
+    "Клиент": "Совкомбанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Гарда",
+    "Продукт / Решение": "Гарда Маскировка",
+    "Партнёр": "ICL",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 13000000,
+    "Маржа (руб.)": 1209000,
+    "Маржа (%)": 9.3,
+    "Возраст сделки (дней)": 238,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 20,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 5,
+    "Win rate партнёра (%)": 32,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 16,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 28,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 24,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента"
+  },
+  {
+    "ID сделки": "DEAL-0041",
+    "Дата создания": "31.08.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "ЭР-Телеком",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "INFERIT",
+    "Продукт / Решение": "INFERIT Ноутбук",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 26000000,
+    "Маржа (руб.)": 1326000,
+    "Маржа (%)": 5.1,
+    "Возраст сделки (дней)": 124,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 1,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 5,
+    "Win rate партнёра (%)": 85,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Егоров М.П.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 60,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 31,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 63,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0042",
+    "Дата создания": "19.01.2025",
+    "Менеджер Axoft": "Лебедева О.В.",
+    "Клиент": "Квадра",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Postgres Pro",
+    "Продукт / Решение": "Postgres Pro Enterprise",
+    "Партнёр": "Сервионика",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 191000000,
+    "Маржа (руб.)": 16808000,
+    "Маржа (%)": 8.8,
+    "Возраст сделки (дней)": 200,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 7,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 27,
+    "Win rate партнёра (%)": 25,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 19,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 253,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 53,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Инициировать пилотный проект для снижения рисков клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0043",
+    "Дата создания": "11.12.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "ФСС",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Kaspersky",
+    "Продукт / Решение": "Kaspersky EDR",
+    "Партнёр": "Ланит",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 775000,
+    "Маржа (руб.)": 55800,
+    "Маржа (%)": 7.2,
+    "Возраст сделки (дней)": 292,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 21,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 4,
+    "Win rate партнёра (%)": 37,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 73,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 19,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 87,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0044",
+    "Дата создания": "17.12.2025",
+    "Менеджер Axoft": "Соколова Н.Д.",
+    "Клиент": "Энел Россия",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Postgres Pro",
+    "Продукт / Решение": "Postgres Pro Standard",
+    "Партнёр": "Диалог ИТ",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 60000000,
+    "Маржа (руб.)": 5460000,
+    "Маржа (%)": 9.1,
+    "Возраст сделки (дней)": 21,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 28,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 41,
+    "Win rate партнёра (%)": 15,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 15,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 125,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 49,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0045",
+    "Дата создания": "17.12.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Росатом",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "RVi Group",
+    "Продукт / Решение": "RVi СКУД",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 155000000,
+    "Маржа (руб.)": 8060000,
+    "Маржа (%)": 5.2,
+    "Возраст сделки (дней)": 341,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 28,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 13,
+    "Win rate партнёра (%)": 62,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 70,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 335,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 72,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0046",
+    "Дата создания": "27.10.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Tele2",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Alpha Systems",
+    "Продукт / Решение": "RedCheck Enterprise",
+    "Партнёр": "Диалог ИТ",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 69000000,
+    "Маржа (руб.)": 5934000,
+    "Маржа (%)": 8.6,
+    "Возраст сделки (дней)": 127,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 22,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 14,
+    "Win rate партнёра (%)": 28,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 49,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 463,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 77,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента"
+  },
+  {
+    "ID сделки": "DEAL-0047",
+    "Дата создания": "01.08.2025",
+    "Менеджер Axoft": "Сидоров К.Н.",
+    "Клиент": "Лента",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "SMB",
+    "Вендор": "AXILON",
+    "Продукт / Решение": "AXILON EPM",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 4845000,
+    "Маржа (руб.)": 295545,
+    "Маржа (%)": 6.1,
+    "Возраст сделки (дней)": 221,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 9,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 4,
+    "Win rate партнёра (%)": 64,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 78,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 14,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Сделка в хорошем состоянии - поддерживать текущий темп"
+  },
+  {
+    "ID сделки": "DEAL-0048",
+    "Дата создания": "05.02.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "ФСС",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "AXILON",
+    "Продукт / Решение": "AXILON CPM",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 16000000,
+    "Маржа (руб.)": 848000,
+    "Маржа (%)": 5.3,
+    "Возраст сделки (дней)": 201,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 30,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 17,
+    "Win rate партнёра (%)": 30,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 28,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 83,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 63,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Инициировать пилотный проект для снижения рисков клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0049",
+    "Дата создания": "24.02.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "НЛМК",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "INFERIT",
+    "Продукт / Решение": "INFERIT Рабочая станция",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 21000000,
+    "Маржа (руб.)": 1197000,
+    "Маржа (%)": 5.7,
+    "Возраст сделки (дней)": 185,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 22,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 42,
+    "Win rate партнёра (%)": 21,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 1,
+    "История связки Партнёр-Клиент (% выигранных)": 33,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 14,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 81,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0050",
+    "Дата создания": "13.02.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "Газпром нефть",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "RVi Group",
+    "Продукт / Решение": "RVi Видеонаблюдение",
+    "Партнёр": "Диалог ИТ",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 47000000,
+    "Маржа (руб.)": 2726000,
+    "Маржа (%)": 5.8,
+    "Возраст сделки (дней)": 223,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 16,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 45,
+    "Win rate партнёра (%)": 73,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 76,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 81,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 72,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0051",
+    "Дата создания": "27.07.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Транстелеком",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "SMB",
+    "Вендор": "OpenYard",
+    "Продукт / Решение": "OpenYard СХД",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 1651000,
+    "Маржа (руб.)": 122174,
+    "Маржа (%)": 7.4,
+    "Возраст сделки (дней)": 134,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 28,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 1,
+    "Win rate партнёра (%)": 23,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 9,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 5,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 14,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0052",
+    "Дата создания": "13.05.2025",
+    "Менеджер Axoft": "Сидоров К.Н.",
+    "Клиент": "МТС",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Группа Астра",
+    "Продукт / Решение": "Astra Linux Common Edition",
+    "Партнёр": "Ланит",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 385000000,
+    "Маржа (руб.)": 23870000,
+    "Маржа (%)": 6.2,
+    "Возраст сделки (дней)": 69,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 30,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 29,
+    "Win rate партнёра (%)": 84,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 60,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 230,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 41,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0053",
+    "Дата создания": "27.09.2025",
+    "Менеджер Axoft": "Соколова Н.Д.",
+    "Клиент": "Квадра",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "DатаРу",
+    "Продукт / Решение": "DатаРу Сервер",
+    "Партнёр": "Инфотекс Интернет Траст",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 349000000,
+    "Маржа (руб.)": 17799000,
+    "Маржа (%)": 5.1,
+    "Возраст сделки (дней)": 256,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 15,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 45,
+    "Win rate партнёра (%)": 75,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 24,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 317,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0054",
+    "Дата создания": "05.09.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "Ростелеком",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Группа Астра",
+    "Продукт / Решение": "Tantor SE",
+    "Партнёр": "Астерос",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 836000,
+    "Маржа (руб.)": 56012,
+    "Маржа (%)": 6.7,
+    "Возраст сделки (дней)": 226,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 15,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 24,
+    "Win rate партнёра (%)": 78,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Егоров М.П.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 78,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 17,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0055",
+    "Дата создания": "05.04.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Пятёрочка",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "RVi Group",
+    "Продукт / Решение": "RVi СКУД",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 456000000,
+    "Маржа (руб.)": 33288000,
+    "Маржа (%)": 7.3,
+    "Возраст сделки (дней)": 41,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 21,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 16,
+    "Win rate партнёра (%)": 42,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 51,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 322,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0056",
+    "Дата создания": "28.08.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "ОГК-2",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Гарда",
+    "Продукт / Решение": "Гарда Маскировка",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 235000000,
+    "Маржа (руб.)": 13395000,
+    "Маржа (%)": 5.7,
+    "Возраст сделки (дней)": 141,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 4,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 6,
+    "Win rate партнёра (%)": 26,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Данилова А.Р.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 48,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 305,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 54,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0057",
+    "Дата создания": "17.12.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "Роснефть",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "UserGate",
+    "Продукт / Решение": "UserGate UTM",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 229000000,
+    "Маржа (руб.)": 19694000,
+    "Маржа (%)": 8.6,
+    "Возраст сделки (дней)": 83,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 10,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 39,
+    "Win rate партнёра (%)": 60,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 84,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 424,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0058",
+    "Дата создания": "16.01.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Пятёрочка",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "ИНДИД",
+    "Продукт / Решение": "Indeed AM",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 125000000,
+    "Маржа (руб.)": 8125000,
+    "Маржа (%)": 6.5,
+    "Возраст сделки (дней)": 225,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 9,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 18,
+    "Win rate партнёра (%)": 58,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Егоров М.П.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 50,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 487,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0059",
+    "Дата создания": "21.12.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "Газпром нефть",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Alpha Systems",
+    "Продукт / Решение": "RedCheck Enterprise",
+    "Партнёр": "Softline",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 293000000,
+    "Маржа (руб.)": 17873000,
+    "Маржа (%)": 6.1,
+    "Возраст сделки (дней)": 255,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 8,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 34,
+    "Win rate партнёра (%)": 57,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 50,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 92,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Инициировать пилотный проект для снижения рисков клиента"
+  },
+  {
+    "ID сделки": "DEAL-0060",
+    "Дата создания": "12.01.2025",
+    "Менеджер Axoft": "Иванов А.В.",
+    "Клиент": "ОГК-2",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "UserGate",
+    "Продукт / Решение": "UserGate Log Analyzer",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 39000000,
+    "Маржа (руб.)": 2223000,
+    "Маржа (%)": 5.7,
+    "Возраст сделки (дней)": 174,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 38,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 4,
+    "Win rate партнёра (%)": 29,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 5,
+    "История связки Партнёр-Клиент (% выигранных)": 25,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 39,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 18,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0061",
+    "Дата создания": "23.06.2025",
+    "Менеджер Axoft": "Соколова Н.Д.",
+    "Клиент": "МТС",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "INFERIT",
+    "Продукт / Решение": "INFERIT Рабочая станция",
+    "Партнёр": "Техносерв",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 177000000,
+    "Маржа (руб.)": 17346000,
+    "Маржа (%)": 9.8,
+    "Возраст сделки (дней)": 237,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 2,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 29,
+    "Win rate партнёра (%)": 83,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 66,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 396,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0062",
+    "Дата создания": "10.06.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Россети",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "UserGate",
+    "Продукт / Решение": "UserGate NGFW",
+    "Партнёр": "Инфосистемы Джет",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 209000000,
+    "Маржа (руб.)": 19437000,
+    "Маржа (%)": 9.3,
+    "Возраст сделки (дней)": 37,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 9,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 36,
+    "Win rate партнёра (%)": 82,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 7,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 382,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0063",
+    "Дата создания": "25.11.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Скартел",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "SMB",
+    "Вендор": "OpenYard",
+    "Продукт / Решение": "OpenYard Сервер",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 3843000,
+    "Маржа (руб.)": 372771,
+    "Маржа (%)": 9.7,
+    "Возраст сделки (дней)": 150,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 3,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 24,
+    "Win rate партнёра (%)": 65,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 11,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 6,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 78,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Зафиксировать контакт ЛПР на стороне клиента; Инициировать пилотный проект для снижения рисков клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0064",
+    "Дата создания": "09.06.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Дикси",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "ГК Солар",
+    "Продукт / Решение": "Solar JSOC",
+    "Партнёр": "Инфотекс Интернет Траст",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 77000000,
+    "Маржа (руб.)": 3927000,
+    "Маржа (%)": 5.1,
+    "Возраст сделки (дней)": 139,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 11,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 44,
+    "Win rate партнёра (%)": 84,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Фролов А.И.",
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 18,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 178,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 71,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента"
+  },
+  {
+    "ID сделки": "DEAL-0065",
+    "Дата создания": "13.07.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Уралхим",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "AXILON",
+    "Продукт / Решение": "AXILON CPM",
+    "Партнёр": "Softline",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 66000000,
+    "Маржа (руб.)": 5082000,
+    "Маржа (%)": 7.7,
+    "Возраст сделки (дней)": 37,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 34,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 42,
+    "Win rate партнёра (%)": 38,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 27,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 469,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 61,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0066",
+    "Дата создания": "16.03.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Россельхозбанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Biplane",
+    "Продукт / Решение": "Biplane Analytics",
+    "Партнёр": "Ланит",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 126000000,
+    "Маржа (руб.)": 7686000,
+    "Маржа (%)": 6.1,
+    "Возраст сделки (дней)": 159,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 27,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 18,
+    "Win rate партнёра (%)": 24,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 26,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 176,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 10,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0067",
+    "Дата создания": "14.11.2025",
+    "Менеджер Axoft": "Лебедева О.В.",
+    "Клиент": "Росреестр",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "SMB",
+    "Вендор": "ГК Солар",
+    "Продукт / Решение": "Solar JSOC",
+    "Партнёр": "ICL",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 3782000,
+    "Маржа (руб.)": 283650,
+    "Маржа (%)": 7.5,
+    "Возраст сделки (дней)": 34,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 17,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 39,
+    "Win rate партнёра (%)": 48,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 39,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 18,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 30,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента"
+  },
+  {
+    "ID сделки": "DEAL-0068",
+    "Дата создания": "10.10.2025",
+    "Менеджер Axoft": "Иванов А.В.",
+    "Клиент": "ВТБ",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Гравитон",
+    "Продукт / Решение": "Гравитон Ноутбук",
+    "Партнёр": "Ай-Теко",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 127000000,
+    "Маржа (руб.)": 7493000,
+    "Маржа (%)": 5.9,
+    "Возраст сделки (дней)": 192,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 4,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 29,
+    "Win rate партнёра (%)": 82,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 20,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 159,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 84,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0069",
+    "Дата создания": "15.08.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "МКБ",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "ИНДИД",
+    "Продукт / Решение": "Indeed IDM",
+    "Партнёр": "Марвел-Дистрибуция",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 251000000,
+    "Маржа (руб.)": 19578000,
+    "Маржа (%)": 7.8,
+    "Возраст сделки (дней)": 105,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 9,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 1,
+    "Win rate партнёра (%)": 58,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 59,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 226,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0070",
+    "Дата создания": "03.10.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Метро",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Postgres Pro",
+    "Продукт / Решение": "Postgres Pro 1C",
+    "Партнёр": "Сервионика",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 240000000,
+    "Маржа (руб.)": 12720000,
+    "Маржа (%)": 5.3,
+    "Возраст сделки (дней)": 362,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 16,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 42,
+    "Win rate партнёра (%)": 68,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 48,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 94,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 46,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0071",
+    "Дата создания": "27.02.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "Метро",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "ИНДИД",
+    "Продукт / Решение": "Indeed IDM",
+    "Партнёр": "Ланит",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 45000000,
+    "Маржа (руб.)": 4185000,
+    "Маржа (%)": 9.3,
+    "Возраст сделки (дней)": 265,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 8,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 22,
+    "Win rate партнёра (%)": 36,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Данилова А.Р.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 71,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 1,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0072",
+    "Дата создания": "23.06.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "ТГК-1",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Postgres Pro",
+    "Продукт / Решение": "Postgres Pro 1C",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 3511000,
+    "Маржа (руб.)": 196616,
+    "Маржа (%)": 5.6,
+    "Возраст сделки (дней)": 149,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 9,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 36,
+    "Win rate партнёра (%)": 56,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 84,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 9,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента"
+  },
+  {
+    "ID сделки": "DEAL-0073",
+    "Дата создания": "01.05.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "ОГК-2",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Группа Астра",
+    "Продукт / Решение": "Astra Linux Common Edition",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 469000000,
+    "Маржа (руб.)": 26733000,
+    "Маржа (%)": 5.7,
+    "Возраст сделки (дней)": 86,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 2,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 44,
+    "Win rate партнёра (%)": 68,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 79,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 35,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 60,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента"
+  },
+  {
+    "ID сделки": "DEAL-0074",
+    "Дата создания": "08.06.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Роснефть",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "UserGate",
+    "Продукт / Решение": "UserGate UTM",
+    "Партнёр": "Ланит",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 61000000,
+    "Маржа (руб.)": 4148000,
+    "Маржа (%)": 6.8,
+    "Возраст сделки (дней)": 180,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 10,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 9,
+    "Win rate партнёра (%)": 59,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 60,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 477,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0075",
+    "Дата создания": "01.01.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "Россети",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Группа Астра",
+    "Продукт / Решение": "Tantor SE",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 137000000,
+    "Маржа (руб.)": 7672000,
+    "Маржа (%)": 5.6,
+    "Возраст сделки (дней)": 229,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 24,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 7,
+    "Win rate партнёра (%)": 58,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 67,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 470,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0076",
+    "Дата создания": "21.08.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Промсвязьбанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Гравитон",
+    "Продукт / Решение": "Гравитон Ноутбук",
+    "Партнёр": "Техносерв",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 6000000,
+    "Маржа (руб.)": 486000,
+    "Маржа (%)": 8.1,
+    "Возраст сделки (дней)": 174,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 9,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 8,
+    "Win rate партнёра (%)": 37,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Данилова А.Р.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 17,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 49,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 90,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Зафиксировать контакт ЛПР на стороне клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки"
+  },
+  {
+    "ID сделки": "DEAL-0077",
+    "Дата создания": "02.06.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Росатом",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Код Безопасности",
+    "Продукт / Решение": "Secret Net Studio",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 50000000,
+    "Маржа (руб.)": 3250000,
+    "Маржа (%)": 6.5,
+    "Возраст сделки (дней)": 146,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 6,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 33,
+    "Win rate партнёра (%)": 37,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 0,
+    "Новый клиент": "Да",
+    "История клиента с Axoft (млн руб.)": 36,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 76,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Оценить силу отношений партнёра с клиентом; рассмотреть альтернативного партнёра"
+  },
+  {
+    "ID сделки": "DEAL-0078",
+    "Дата создания": "25.10.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Открытие",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Код Безопасности",
+    "Продукт / Решение": "Континент TLS",
+    "Партнёр": "Инфосистемы Джет",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 340000000,
+    "Маржа (руб.)": 20740000,
+    "Маржа (%)": 6.1,
+    "Возраст сделки (дней)": 242,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 12,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 5,
+    "Win rate партнёра (%)": 55,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Егоров М.П.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Фролов А.И.",
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 33,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 91,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 64,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Сделка в хорошем состоянии - поддерживать текущий темп"
+  },
+  {
+    "ID сделки": "DEAL-0079",
+    "Дата создания": "13.06.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Сбербанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "SMB",
+    "Вендор": "RVi Group",
+    "Продукт / Решение": "RVi СКУД",
+    "Партнёр": "Сервионика",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 1187000,
+    "Маржа (руб.)": 104456,
+    "Маржа (%)": 8.8,
+    "Возраст сделки (дней)": 146,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 7,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 2,
+    "Win rate партнёра (%)": 81,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Данилова А.Р.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 54,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 0,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0080",
+    "Дата создания": "06.08.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "Билайн",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Гарда",
+    "Продукт / Решение": "Гарда Маскировка",
+    "Партнёр": "Ланит",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 2464000,
+    "Маржа (руб.)": 145376,
+    "Маржа (%)": 5.9,
+    "Возраст сделки (дней)": 45,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 9,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 45,
+    "Win rate партнёра (%)": 78,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 75,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 6,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 48,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0081",
+    "Дата создания": "20.09.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "ТГК-1",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "RVi Group",
+    "Продукт / Решение": "RVi Видеонаблюдение",
+    "Партнёр": "Ай-Теко",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 104000000,
+    "Маржа (руб.)": 10088000,
+    "Маржа (%)": 9.7,
+    "Возраст сделки (дней)": 309,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 21,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 16,
+    "Win rate партнёра (%)": 61,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Беляев К.С.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 33,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 184,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 60,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы"
+  },
+  {
+    "ID сделки": "DEAL-0082",
+    "Дата создания": "11.07.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "ТМК",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Biplane",
+    "Продукт / Решение": "Biplane BI",
+    "Партнёр": "Диалог ИТ",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 14000000,
+    "Маржа (руб.)": 910000,
+    "Маржа (%)": 6.5,
+    "Возраст сделки (дней)": 7,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 5,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 34,
+    "Win rate партнёра (%)": 89,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Алексеев В.Н.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Орлова Т.Н.",
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 80,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 49,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Сделка в хорошем состоянии - поддерживать текущий темп"
+  },
+  {
+    "ID сделки": "DEAL-0083",
+    "Дата создания": "09.06.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "Минпромторг",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Группа Астра",
+    "Продукт / Решение": "Astra Linux Common Edition",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 20000000,
+    "Маржа (руб.)": 1880000,
+    "Маржа (%)": 9.4,
+    "Возраст сделки (дней)": 47,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 4,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 36,
+    "Win rate партнёра (%)": 41,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 25,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 91,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 48,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0084",
+    "Дата создания": "19.03.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "Минцифры",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "INFERIT",
+    "Продукт / Решение": "INFERIT Рабочая станция",
+    "Партнёр": "Открытые технологии",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 39000000,
+    "Маржа (руб.)": 2886000,
+    "Маржа (%)": 7.4,
+    "Возраст сделки (дней)": 354,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 17,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 43,
+    "Win rate партнёра (%)": 26,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 8,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 90,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 19,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0085",
+    "Дата создания": "14.10.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "РусГидро",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "DатаРу",
+    "Продукт / Решение": "DатаРу СХД",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 441000000,
+    "Маржа (руб.)": 28665000,
+    "Маржа (%)": 6.5,
+    "Возраст сделки (дней)": 119,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 2,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 19,
+    "Win rate партнёра (%)": 75,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Борисова Ю.К.",
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Тихонов Д.А.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 54,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 256,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Сделка в хорошем состоянии - поддерживать текущий темп"
+  },
+  {
+    "ID сделки": "DEAL-0086",
+    "Дата создания": "15.12.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Роснефть",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Avanpost",
+    "Продукт / Решение": "Avanpost PKI",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 273000000,
+    "Маржа (руб.)": 22932000,
+    "Маржа (%)": 8.4,
+    "Возраст сделки (дней)": 20,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 17,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 38,
+    "Win rate партнёра (%)": 30,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 4,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 420,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 36,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0087",
+    "Дата создания": "29.04.2025",
+    "Менеджер Axoft": "Петрова М.С.",
+    "Клиент": "Газпромбанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "UserGate",
+    "Продукт / Решение": "UserGate UTM",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 455000000,
+    "Маржа (руб.)": 29575000,
+    "Маржа (%)": 6.5,
+    "Возраст сделки (дней)": 21,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 16,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 44,
+    "Win rate партнёра (%)": 43,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 74,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 73,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 56,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Подтвердить наличие бюджета у клиента"
+  },
+  {
+    "ID сделки": "DEAL-0088",
+    "Дата создания": "21.11.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "ТГК-1",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "AXILON",
+    "Продукт / Решение": "AXILON EPM",
+    "Партнёр": "Диалог ИТ",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 243000000,
+    "Маржа (руб.)": 21141000,
+    "Маржа (%)": 8.7,
+    "Возраст сделки (дней)": 322,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 28,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 5,
+    "Win rate партнёра (%)": 63,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 41,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 15,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 38,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0089",
+    "Дата создания": "29.05.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Интер РАО",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "OpenYard",
+    "Продукт / Решение": "OpenYard СХД",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 123000000,
+    "Маржа (руб.)": 10086000,
+    "Маржа (%)": 8.2,
+    "Возраст сделки (дней)": 52,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 39,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 12,
+    "Win rate партнёра (%)": 44,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 30,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 446,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 15,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0090",
+    "Дата создания": "05.03.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "Сбербанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "Группа Астра",
+    "Продукт / Решение": "Tantor SE",
+    "Партнёр": "Марвел-Дистрибуция",
+    "Стадия воронки": "Коммерческое предложение",
+    "Сумма сделки (руб.)": 205000000,
+    "Маржа (руб.)": 20295000,
+    "Маржа (%)": 9.9,
+    "Возраст сделки (дней)": 66,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 29,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 44,
+    "Win rate партнёра (%)": 45,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 40,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 339,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 63,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Инициировать пилотный проект для снижения рисков клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0091",
+    "Дата создания": "26.01.2025",
+    "Менеджер Axoft": "Волков С.Р.",
+    "Клиент": "Росатом",
+    "Отрасль": "Госсектор",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Positive Technologies",
+    "Продукт / Решение": "MaxPatrol VM",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 204000000,
+    "Маржа (руб.)": 13668000,
+    "Маржа (%)": 6.7,
+    "Возраст сделки (дней)": 80,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 14,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 33,
+    "Win rate партнёра (%)": 32,
+    "Роль партнёра в сделке": "Цена",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 4,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 49,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 25,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0092",
+    "Дата создания": "30.09.2025",
+    "Менеджер Axoft": "Морозова Т.И.",
+    "Клиент": "РусГидро",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "Гарда",
+    "Продукт / Решение": "Гарда DBF",
+    "Партнёр": "Онланта",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 311000000,
+    "Маржа (руб.)": 26435000,
+    "Маржа (%)": 8.5,
+    "Возраст сделки (дней)": 217,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 32,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 14,
+    "Win rate партнёра (%)": 32,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 14,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 467,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 14,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0093",
+    "Дата создания": "15.09.2025",
+    "Менеджер Axoft": "Зайцев П.Г.",
+    "Клиент": "Энел Россия",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "SMB",
+    "Вендор": "ГК Солар",
+    "Продукт / Решение": "Solar Dozor",
+    "Партнёр": "Марвел-Дистрибуция",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 4744000,
+    "Маржа (руб.)": 275152,
+    "Маржа (%)": 5.8,
+    "Возраст сделки (дней)": 91,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 19,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 17,
+    "Win rate партнёра (%)": 21,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 4,
+    "История связки Партнёр-Клиент (% выигранных)": 17,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 2,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 5,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0094",
+    "Дата создания": "12.03.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "ВТБ",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "EPG+",
+    "Вендор": "DатаРу",
+    "Продукт / Решение": "DатаРу СХД",
+    "Партнёр": "Диалог ИТ",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 203000000,
+    "Маржа (руб.)": 18473000,
+    "Маржа (%)": 9.1,
+    "Возраст сделки (дней)": 145,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 17,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 34,
+    "Win rate партнёра (%)": 22,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 1,
+    "История связки Партнёр-Клиент (% выигранных)": 21,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 394,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 16,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зафиксировать контакт ЛПР на стороне клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0095",
+    "Дата создания": "09.08.2025",
+    "Менеджер Axoft": "Козлова Е.П.",
+    "Клиент": "Квадра",
+    "Отрасль": "Энергетика",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "КИБЕРПРОТЕКТ",
+    "Продукт / Решение": "Кибер Бэкап",
+    "Партнёр": "Астерос",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 270000000,
+    "Маржа (руб.)": 24030000,
+    "Маржа (%)": 8.9,
+    "Возраст сделки (дней)": 176,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 6,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 12,
+    "Win rate партнёра (%)": 86,
+    "Роль партнёра в сделке": "Генерация Axoft",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Фролов А.И.",
+    "Кол-во участников команды": 5,
+    "История связки Партнёр-Клиент (% выигранных)": 67,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 40,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Подключить BDM для поддержки вендора и стратегической работы"
+  },
+  {
+    "ID сделки": "DEAL-0096",
+    "Дата создания": "12.04.2025",
+    "Менеджер Axoft": "Иванов А.В.",
+    "Клиент": "МТС",
+    "Отрасль": "Телеком",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Kaspersky",
+    "Продукт / Решение": "Kaspersky EDR",
+    "Партнёр": "Ланит",
+    "Стадия воронки": "Квалификация",
+    "Сумма сделки (руб.)": 13000000,
+    "Маржа (руб.)": 962000,
+    "Маржа (%)": 7.4,
+    "Возраст сделки (дней)": 65,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Нет",
+    "Дней без коммуникации": 19,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 8,
+    "Win rate партнёра (%)": 40,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 2,
+    "История связки Партнёр-Клиент (% выигранных)": 50,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 91,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 35,
+    "Приоритет сделки": "Низкий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зафиксировать контакт ЛПР на стороне клиента; Подтвердить наличие бюджета у клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0097",
+    "Дата создания": "01.08.2025",
+    "Менеджер Axoft": "Новиков Д.А.",
+    "Клиент": "Металлоинвест",
+    "Отрасль": "Промышленность",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "Positive Technologies",
+    "Продукт / Решение": "PT Sandbox",
+    "Партнёр": "Ай-Теко",
+    "Стадия воронки": "Переговоры",
+    "Сумма сделки (руб.)": 27000000,
+    "Маржа (руб.)": 1647000,
+    "Маржа (%)": 6.1,
+    "Возраст сделки (дней)": 104,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 20,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 41,
+    "Win rate партнёра (%)": 25,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Нет",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 1,
+    "История связки Партнёр-Клиент (% выигранных)": 37,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 41,
+    "Результат сделки": "Выиграна",
+    "Вероятность закрытия (%)": 69,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Зафиксировать контакт ЛПР на стороне клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0098",
+    "Дата создания": "03.06.2025",
+    "Менеджер Axoft": "Иванов А.В.",
+    "Клиент": "Лэтуаль",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "SMB",
+    "Вендор": "Alpha Systems",
+    "Продукт / Решение": "RedCheck Enterprise",
+    "Партнёр": "Сервионика",
+    "Стадия воронки": "Интерес / Намерение",
+    "Сумма сделки (руб.)": 1622000,
+    "Маржа (руб.)": 139492,
+    "Маржа (%)": 8.6,
+    "Возраст сделки (дней)": 249,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Да",
+    "Заявка на пресейл": "Нет",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Документ",
+    "Дней без коммуникации": 20,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 40,
+    "Win rate партнёра (%)": 38,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 22,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 18,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 45,
+    "Приоритет сделки": "Средний",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  },
+  {
+    "ID сделки": "DEAL-0099",
+    "Дата создания": "11.01.2025",
+    "Менеджер Axoft": "Иванов А.В.",
+    "Клиент": "Лента",
+    "Отрасль": "Ритейл",
+    "Сегмент клиента": "Mid-Market",
+    "Вендор": "КИБЕРПРОТЕКТ",
+    "Продукт / Решение": "Кибер Бэкап",
+    "Партнёр": "КРОК",
+    "Стадия воронки": "Подготовка сделки / Presale",
+    "Сумма сделки (руб.)": 43000000,
+    "Маржа (руб.)": 3741000,
+    "Маржа (%)": 8.7,
+    "Возраст сделки (дней)": 154,
+    "Защита сделки (регистрация у вендора)": "Да",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Да",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 17,
+    "Уверенность менеджера": "Да",
+    "Встреча с партнёром (дней назад)": 6,
+    "Win rate партнёра (%)": 25,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Нет",
+    "Имя BDM": null,
+    "Инженер / Presale в команде": "Да",
+    "Имя инженера": "Гусева Л.В.",
+    "Кол-во участников команды": 5,
+    "История связки Партнёр-Клиент (% выигранных)": 73,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 75,
+    "Результат сделки": "В работе",
+    "Вероятность закрытия (%)": 85,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Восстановить ритм коммуникаций - более 14 дней тишины; Подключить BDM для поддержки вендора и стратегической работы; Инициировать пилотный проект для снижения рисков клиента"
+  },
+  {
+    "ID сделки": "DEAL-0100",
+    "Дата создания": "04.12.2025",
+    "Менеджер Axoft": "Лебедева О.В.",
+    "Клиент": "Совкомбанк",
+    "Отрасль": "Финансы",
+    "Сегмент клиента": "Enterprise",
+    "Вендор": "КИБЕРПРОТЕКТ",
+    "Продукт / Решение": "Кибер Бэкап",
+    "Партнёр": "Системный софт",
+    "Стадия воронки": "Закрытие",
+    "Сумма сделки (руб.)": 189000000,
+    "Маржа (руб.)": 10962000,
+    "Маржа (%)": 5.8,
+    "Возраст сделки (дней)": 233,
+    "Защита сделки (регистрация у вендора)": "Нет",
+    "Наличие пилота": "Нет",
+    "Заявка на пресейл": "Да",
+    "Наличие ЛПР": "Нет",
+    "Статус бюджета": "Устное",
+    "Дней без коммуникации": 14,
+    "Уверенность менеджера": "Нет",
+    "Встреча с партнёром (дней назад)": 13,
+    "Win rate партнёра (%)": 69,
+    "Роль партнёра в сделке": "Активный",
+    "Контакт партнёра заполнен": "Да",
+    "BDM в команде": "Да",
+    "Имя BDM": "Громов И.С.",
+    "Инженер / Presale в команде": "Нет",
+    "Имя инженера": null,
+    "Кол-во участников команды": 3,
+    "История связки Партнёр-Клиент (% выигранных)": 37,
+    "Новый клиент": "Нет",
+    "История клиента с Axoft (млн руб.)": 11,
+    "Результат сделки": "Проиграна",
+    "Вероятность закрытия (%)": 95,
+    "Приоритет сделки": "Высокий",
+    "Рекомендации ИИ": "Зафиксировать контакт ЛПР на стороне клиента; Зарегистрировать сделку у вендора для получения эксклюзивной поддержки; Подключить инженера / presale для технической проработки"
+  }
+]</script>
 
-        <section class="deal-layout">
-          <article class="deal-card" id="dealCard"></article>
-          <aside class="insight-panel" id="insightPanel"></aside>
-        </section>
-      </main>
+    <!-- JS: Business logic and UX interactions -->
+    <script>const FIELD = {
+  id: "ID сделки",
+  createdAt: "Дата создания",
+  manager: "Менеджер Axoft",
+  client: "Клиент",
+  industry: "Отрасль",
+  segment: "Сегмент клиента",
+  vendor: "Вендор",
+  product: "Продукт / Решение",
+  partner: "Партнёр",
+  stage: "Стадия воронки",
+  amount: "Сумма сделки (руб.)",
+  marginPercent: "Маржа (%)",
+  ageDays: "Возраст сделки (дней)",
+  vendorProtection: "Защита сделки (регистрация у вендора)",
+  pilot: "Наличие пилота",
+  presaleRequest: "Заявка на пресейл",
+  decisionMaker: "Наличие ЛПР",
+  budget: "Статус бюджета",
+  silenceDays: "Дней без коммуникации",
+  managerConfidence: "Уверенность менеджера",
+  partnerMeetingDays: "Встреча с партнёром (дней назад)",
+  partnerWinRate: "Win rate партнёра (%)",
+  partnerRole: "Роль партнёра в сделке",
+  partnerContact: "Контакт партнёра заполнен",
+  bdm: "BDM в команде",
+  bdmName: "Имя BDM",
+  engineer: "Инженер / Presale в команде",
+  engineerName: "Имя инженера",
+  teamCount: "Кол-во участников команды",
+  pairHistory: "История связки Партнёр-Клиент (% выигранных)",
+  newClient: "Новый клиент",
+  clientHistory: "История клиента с Axoft (млн руб.)",
+  result: "Результат сделки",
+  oldProbability: "Вероятность закрытия (%)",
+  oldPriority: "Приоритет сделки",
+  oldRecommendation: "Рекомендации ИИ"
+};
+
+const stageWeights = {
+  "Интерес / Намерение": -8,
+  "Квалификация": -4,
+  "Подготовка сделки / Presale": 3,
+  "Коммерческое предложение": 8,
+  "Переговоры": 12,
+  "Закрытие": 18
+};
+
+const segmentWeights = {
+  "SMB": 0,
+  "Mid-Market": 1,
+  "Enterprise": 3,
+  "EPG+": 5
+};
+
+const state = {
+  deals: [],
+  scored: [],
+  selectedId: null,
+  search: "",
+  health: "all"
+};
+
+const formatRub = new Intl.NumberFormat("ru-RU", {
+  style: "currency",
+  currency: "RUB",
+  maximumFractionDigits: 0
+});
+
+const formatNumber = new Intl.NumberFormat("ru-RU");
+
+function yes(value) {
+  return String(value || "").trim().toLowerCase() === "да";
+}
+
+function number(value) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function addFactor(factors, name, delta, group) {
+  if (delta !== 0) {
+    factors.push({ name, delta, group });
+  }
+}
+
+function addRisk(risks, severity, title, detail) {
+  risks.push({ severity, title, detail });
+}
+
+function amountWeight(amount) {
+  if (amount >= 100000000) return 4;
+  if (amount >= 50000000) return 3;
+  if (amount >= 5000000) return 1;
+  return 0;
+}
+
+function marginWeight(margin) {
+  if (margin >= 8) return 2;
+  if (margin < 6) return -2;
+  return 0;
+}
+
+function ageWeight(days) {
+  if (days > 180) return -8;
+  if (days > 120) return -4;
+  if (days > 60) return -2;
+  return 0;
+}
+
+function communicationWeight(days) {
+  if (days <= 7) return 6;
+  if (days <= 14) return 1;
+  if (days <= 21) return -10;
+  return -18;
+}
+
+function partnerMeetingWeight(days) {
+  if (days <= 14) return 3;
+  if (days <= 30) return -3;
+  return -7;
+}
+
+function winRateWeight(rate) {
+  if (rate >= 75) return 10;
+  if (rate >= 60) return 6;
+  if (rate >= 40) return 0;
+  if (rate >= 25) return -6;
+  return -10;
+}
+
+function pairHistoryWeight(rate) {
+  if (rate >= 70) return 13;
+  if (rate >= 50) return 7;
+  if (rate >= 25) return 0;
+  if (rate > 0) return -5;
+  return -8;
+}
+
+function clientHistoryWeight(amountMln) {
+  if (amountMln >= 200) return 5;
+  if (amountMln >= 50) return 3;
+  return 0;
+}
+
+function scoreDeal(deal) {
+  const factors = [];
+  const risks = [];
+  let score = 50;
+
+  const stage = deal[FIELD.stage];
+  const stageDelta = stageWeights[stage] ?? 0;
+  addFactor(factors, `Стадия: ${stage}`, stageDelta, "Основные параметры");
+
+  const segmentDelta = segmentWeights[deal[FIELD.segment]] ?? 0;
+  addFactor(factors, `Сегмент клиента: ${deal[FIELD.segment]}`, segmentDelta, "Основные параметры");
+
+  const amount = number(deal[FIELD.amount]);
+  const amountDelta = amountWeight(amount);
+  addFactor(factors, `Сумма сделки: ${formatRub.format(amount)}`, amountDelta, "Основные параметры");
+
+  const marginDelta = marginWeight(number(deal[FIELD.marginPercent]));
+  addFactor(factors, `Маржа: ${deal[FIELD.marginPercent]}%`, marginDelta, "Основные параметры");
+
+  const ageDays = number(deal[FIELD.ageDays]);
+  const ageDelta = ageWeight(ageDays);
+  addFactor(factors, `Возраст сделки: ${ageDays} дн.`, ageDelta, "Основные параметры");
+  if (ageDays > 180) addRisk(risks, "high", "Сделка слишком долго в воронке", `Возраст сделки ${ageDays} дней. Нужна проверка актуальности и следующего шага.`);
+
+  const vendorProtectionDelta = yes(deal[FIELD.vendorProtection]) ? 8 : -8;
+  addFactor(factors, "Регистрация у вендора", vendorProtectionDelta, "Основные параметры");
+  if (!yes(deal[FIELD.vendorProtection])) addRisk(risks, "high", "Нет защиты сделки у вендора", "Сделка не зарегистрирована у вендора, ниже шанс на эксклюзивную поддержку и спецусловия.");
+
+  const pilotDelta = yes(deal[FIELD.pilot]) ? 15 : -6;
+  addFactor(factors, "Пилотный проект", pilotDelta, "Основные параметры");
+  if (!yes(deal[FIELD.pilot])) addRisk(risks, "medium", "Нет пилота", "Для сложной или крупной сделки пилот снижает технические и закупочные риски.");
+
+  const presaleDelta = yes(deal[FIELD.presaleRequest]) ? 7 : -5;
+  addFactor(factors, "Заявка на пресейл", presaleDelta, "Основные параметры");
+  if (!yes(deal[FIELD.presaleRequest])) addRisk(risks, "medium", "Нет заявки на пресейл", "Техническая проработка не подтверждена в CRM.");
+
+  const decisionMakerDelta = yes(deal[FIELD.decisionMaker]) ? 12 : -16;
+  addFactor(factors, "Контакт ЛПР", decisionMakerDelta, "Качество проработки");
+  if (!yes(deal[FIELD.decisionMaker])) addRisk(risks, "critical", "Не зафиксирован ЛПР", "В карточке сделки нет контакта лица, принимающего решение.");
+
+  const budget = deal[FIELD.budget];
+  const budgetDelta = budget === "Документ" ? 12 : budget === "Устное" ? 5 : -14;
+  addFactor(factors, `Бюджет: ${budget}`, budgetDelta, "Качество проработки");
+  if (budget === "Нет") addRisk(risks, "critical", "Бюджет не подтвержден", "Нет подтверждения бюджета клиента.");
+
+  const silenceDays = number(deal[FIELD.silenceDays]);
+  const silenceDelta = communicationWeight(silenceDays);
+  addFactor(factors, `Ритм коммуникаций: ${silenceDays} дн.`, silenceDelta, "Качество проработки");
+  if (silenceDays > 21) addRisk(risks, "critical", "Критически нарушен ритм коммуникаций", `${silenceDays} дней без обновлений по сделке.`);
+  else if (silenceDays > 14) addRisk(risks, "high", "Нарушен ритм коммуникаций", `${silenceDays} дней без обновлений по сделке.`);
+
+  const confidenceDelta = yes(deal[FIELD.managerConfidence]) ? 6 : -5;
+  addFactor(factors, "Уверенность менеджера", confidenceDelta, "Качество проработки");
+
+  const partnerMeetingDays = number(deal[FIELD.partnerMeetingDays]);
+  const partnerMeetingDelta = partnerMeetingWeight(partnerMeetingDays);
+  addFactor(factors, `Встреча с партнером: ${partnerMeetingDays} дн.`, partnerMeetingDelta, "Качество проработки");
+  if (partnerMeetingDays > 30) addRisk(risks, "medium", "Давно не было встречи с партнером", `Последняя встреча была ${partnerMeetingDays} дней назад.`);
+
+  const partnerWinRate = number(deal[FIELD.partnerWinRate]);
+  const winRateDelta = winRateWeight(partnerWinRate);
+  addFactor(factors, `Win rate партнера: ${partnerWinRate}%`, winRateDelta, "Партнер");
+  if (partnerWinRate < 40) addRisk(risks, "high", "Слабая историческая результативность партнера", `Win rate партнера ${partnerWinRate}%.`);
+
+  const partnerRole = deal[FIELD.partnerRole];
+  const partnerRoleDelta = partnerRole === "Активный" ? 5 : partnerRole === "Генерация Axoft" ? 2 : -5;
+  addFactor(factors, `Роль партнера: ${partnerRole}`, partnerRoleDelta, "Партнер");
+  if (partnerRole === "Цена") addRisk(risks, "medium", "Роль партнера сведена к цене", "Партнер может не вести активную работу с клиентом.");
+
+  const partnerContactDelta = yes(deal[FIELD.partnerContact]) ? 2 : -4;
+  addFactor(factors, "Контакт партнера", partnerContactDelta, "Партнер");
+  if (!yes(deal[FIELD.partnerContact])) addRisk(risks, "medium", "Не заполнен контакт партнера", "Нет базового контактного лица со стороны партнера.");
+
+  const bdmDelta = yes(deal[FIELD.bdm]) ? 9 : -8;
+  addFactor(factors, "BDM в команде", bdmDelta, "Команда Axoft");
+  if (!yes(deal[FIELD.bdm])) addRisk(risks, "high", "Нет BDM в команде", "Нет поддержки вендорского направления и стратегической проработки.");
+
+  const engineerDelta = yes(deal[FIELD.engineer]) ? 8 : -7;
+  addFactor(factors, "Инженер / Presale", engineerDelta, "Команда Axoft");
+  if (!yes(deal[FIELD.engineer])) addRisk(risks, "high", "Нет инженера / presale", "Техническая проработка сделки не подтверждена участником команды.");
+
+  const teamCount = number(deal[FIELD.teamCount]);
+  const teamDelta = teamCount >= 4 ? 4 : teamCount === 3 ? 2 : teamCount === 1 ? -4 : 0;
+  addFactor(factors, `Команда сделки: ${teamCount} участн.`, teamDelta, "Команда Axoft");
+
+  const pairHistory = number(deal[FIELD.pairHistory]);
+  const pairHistoryDelta = pairHistoryWeight(pairHistory);
+  addFactor(factors, `История партнер-клиент: ${pairHistory}%`, pairHistoryDelta, "Клиент и история");
+  if (pairHistory < 25) addRisk(risks, "high", "Слабая история связки партнер-клиент", `История успешных сделок связки ${pairHistory}%.`);
+
+  const newClientDelta = yes(deal[FIELD.newClient]) ? -2 : 0;
+  addFactor(factors, "Новый клиент", newClientDelta, "Клиент и история");
+
+  const clientHistoryDelta = clientHistoryWeight(number(deal[FIELD.clientHistory]));
+  addFactor(factors, `История клиента с Axoft: ${deal[FIELD.clientHistory]} млн руб.`, clientHistoryDelta, "Клиент и история");
+
+  score += factors.reduce((sum, factor) => sum + factor.delta, 0);
+  const probability = Math.round(clamp(score, 5, 95));
+  const criticalCount = risks.filter((risk) => risk.severity === "critical").length;
+  const highCount = risks.filter((risk) => risk.severity === "high").length;
+  const health = getHealth(probability, criticalCount, highCount);
+  const priority = probability >= 70 ? "Высокий" : probability >= 45 ? "Средний" : "Низкий";
+
+  return {
+    deal,
+    probability,
+    priority,
+    health,
+    risks,
+    factors,
+    managerActions: buildManagerActions(deal, risks),
+    leaderActions: buildLeaderActions(deal, risks, probability)
+  };
+}
+
+function getHealth(probability, criticalCount, highCount) {
+  if (probability < 45 || criticalCount >= 2 || highCount >= 3) return "red";
+  if (probability >= 70 && criticalCount === 0 && highCount <= 1) return "green";
+  return "yellow";
+}
+
+function buildManagerActions(deal, risks) {
+  const actions = [];
+  const hasRisk = (title) => risks.some((risk) => risk.title === title);
+
+  if (hasRisk("Критически нарушен ритм коммуникаций") || hasRisk("Нарушен ритм коммуникаций")) {
+    actions.push("Сегодня обновить текущую ситуацию по проекту и зафиксировать следующий контакт с партнером или клиентом.");
+  }
+  if (hasRisk("Не зафиксирован ЛПР")) {
+    actions.push("Попросить партнера подтвердить ЛПР клиента и внести контакт с ролью в CRM.");
+  }
+  if (hasRisk("Бюджет не подтвержден")) {
+    actions.push("Уточнить статус бюджета: сумма, источник финансирования, срок и формат подтверждения.");
+  }
+  if (hasRisk("Нет инженера / presale")) {
+    actions.push("Подключить инженера / presale и согласовать технический следующий шаг.");
+  }
+  if (hasRisk("Нет защиты сделки у вендора")) {
+    actions.push("Проверить возможность регистрации сделки у вендора и подготовить данные для защиты.");
+  }
+  if (hasRisk("Нет пилота")) {
+    actions.push("Оценить необходимость пилота и предложить клиенту короткий сценарий проверки решения.");
+  }
+  if (hasRisk("Давно не было встречи с партнером")) {
+    actions.push("Назначить встречу с партнером и сверить план выхода на клиента.");
+  }
+  if (actions.length === 0) {
+    actions.push("Поддерживать текущий темп, обновлять CRM после каждого значимого контакта и зафиксировать следующий шаг.");
+  }
+  return actions;
+}
+
+function buildLeaderActions(deal, risks, probability) {
+  const actions = [];
+  const highValue = number(deal[FIELD.amount]) >= 50000000;
+  const criticalCount = risks.filter((risk) => risk.severity === "critical").length;
+
+  if (!yes(deal[FIELD.bdm])) {
+    actions.push("Назначить BDM или подтвердить, что сделка не требует вендорской поддержки.");
+  }
+  if (probability < 45 || criticalCount > 0) {
+    actions.push("Провести короткий разбор сделки с менеджером: ЛПР, бюджет, следующий контакт, роль партнера.");
+  }
+  if (highValue && risks.length > 0) {
+    actions.push("Взять сделку в управленческий контроль до снятия ключевых рисков.");
+  }
+  if (number(deal[FIELD.partnerWinRate]) < 40 || number(deal[FIELD.pairHistory]) < 25) {
+    actions.push("Проверить, есть ли в экосистеме партнер с более сильной историей по этому клиенту или отрасли.");
+  }
+  if (!yes(deal[FIELD.engineer])) {
+    actions.push("Согласовать доступность технического ресурса, если сделка находится в Presale, КП, переговорах или закрытии.");
+  }
+  if (actions.length === 0) {
+    actions.push("Сделка выглядит управляемой. Контроль оставить на регулярном pipeline review.");
+  }
+  return actions;
+}
+
+function healthLabel(health) {
+  return {
+    green: "Здоровая",
+    yellow: "Требует внимания",
+    red: "Критичная"
+  }[health];
+}
+
+function healthColor(health) {
+  return {
+    green: "var(--green)",
+    yellow: "var(--yellow)",
+    red: "var(--red)"
+  }[health];
+}
+
+function riskSeverityLabel(severity) {
+  return {
+    critical: "Критический",
+    high: "Высокий",
+    medium: "Средний"
+  }[severity];
+}
+
+function renderSummary() {
+  const total = state.scored.length;
+  const avg = Math.round(state.scored.reduce((sum, item) => sum + item.probability, 0) / total);
+  const red = state.scored.filter((item) => item.health === "red").length;
+  const green = state.scored.filter((item) => item.health === "green").length;
+
+  document.getElementById("summaryGrid").innerHTML = [
+    ["Сделок", formatNumber.format(total)],
+    ["Средняя вероятность", `${avg}%`],
+    ["Здоровые", formatNumber.format(green)],
+    ["Красные", formatNumber.format(red)]
+  ].map(([label, value]) => `
+    <div class="metric">
+      <div class="metric-label">${label}</div>
+      <div class="metric-value">${value}</div>
+    </div>
+  `).join("");
+}
+
+function getVisibleDeals() {
+  const query = state.search.trim().toLowerCase();
+  return state.scored.filter((item) => {
+    if (state.health !== "all" && item.health !== state.health) return false;
+    if (!query) return true;
+    const deal = item.deal;
+    return [
+      deal[FIELD.id],
+      deal[FIELD.client],
+      deal[FIELD.partner],
+      deal[FIELD.manager],
+      deal[FIELD.vendor],
+      deal[FIELD.product]
+    ].some((value) => String(value || "").toLowerCase().includes(query));
+  });
+}
+
+function renderDealList() {
+  const list = document.getElementById("dealList");
+  const visible = getVisibleDeals();
+
+  if (!visible.some((item) => item.deal[FIELD.id] === state.selectedId) && visible.length > 0) {
+    state.selectedId = visible[0].deal[FIELD.id];
+  }
+
+  list.innerHTML = visible.map((item) => {
+    const deal = item.deal;
+    const selected = deal[FIELD.id] === state.selectedId ? " is-selected" : "";
+    return `
+      <button class="deal-item${selected}" data-id="${deal[FIELD.id]}">
+        <div class="deal-item-title">
+          <span>${deal[FIELD.id]}</span>
+          <span class="badge ${item.health}">${item.probability}%</span>
+        </div>
+        <div class="deal-item-meta">${deal[FIELD.client]} · ${deal[FIELD.stage]}</div>
+        <div class="deal-item-meta">${deal[FIELD.partner]} · ${formatRub.format(number(deal[FIELD.amount]))}</div>
+      </button>
+    `;
+  }).join("");
+
+  if (visible.length === 0) {
+    list.innerHTML = `<div class="empty-state">Сделки по текущему фильтру не найдены.</div>`;
+  }
+
+  list.querySelectorAll(".deal-item").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedId = button.dataset.id;
+      render();
+    });
+  });
+}
+
+function renderSelectedDeal() {
+  const selected = state.scored.find((item) => item.deal[FIELD.id] === state.selectedId) || state.scored[0];
+  if (!selected) return;
+  state.selectedId = selected.deal[FIELD.id];
+
+  const deal = selected.deal;
+  const scoreColor = healthColor(selected.health);
+  document.getElementById("dealCard").style.setProperty("--score", selected.probability);
+  document.getElementById("dealCard").style.setProperty("--score-color", scoreColor);
+
+  document.getElementById("dealCard").innerHTML = `
+    <div class="deal-header">
+      <div>
+        <p class="eyebrow">${deal[FIELD.id]} · ${deal[FIELD.result]}</p>
+        <h2 class="deal-title">${deal[FIELD.client]}</h2>
+        <p class="deal-subtitle">${deal[FIELD.product]} · ${deal[FIELD.vendor]} · ${deal[FIELD.partner]}</p>
+      </div>
+      <div class="score-ring" aria-label="Вероятность закрытия ${selected.probability}%">
+        <div class="score-ring-inner">
+          <div class="score-value">${selected.probability}%</div>
+          <div class="score-label">вероятность</div>
+        </div>
+      </div>
     </div>
 
-    <script src="app.js"></script>
+    <div class="status-row">
+      <span class="badge ${selected.health}">${healthLabel(selected.health)}</span>
+      <span class="badge blue">Приоритет: ${selected.priority}</span>
+      <span class="badge blue">Старая оценка: ${deal[FIELD.oldProbability]}%</span>
+    </div>
+
+    <div class="detail-grid">
+      ${detail("Стадия", deal[FIELD.stage])}
+      ${detail("Сумма", formatRub.format(number(deal[FIELD.amount])))}
+      ${detail("Маржа", `${deal[FIELD.marginPercent]}%`)}
+      ${detail("Менеджер", deal[FIELD.manager])}
+      ${detail("Сегмент", deal[FIELD.segment])}
+      ${detail("Отрасль", deal[FIELD.industry])}
+      ${detail("BDM", yes(deal[FIELD.bdm]) ? deal[FIELD.bdmName] : "Не подключен")}
+      ${detail("Инженер", yes(deal[FIELD.engineer]) ? deal[FIELD.engineerName] : "Не подключен")}
+    </div>
+
+    <div class="section">
+      <h3>Ключевые риски</h3>
+      ${renderRisks(selected.risks)}
+    </div>
+
+    <div class="section">
+      <h3>План действий для менеджера</h3>
+      ${renderActions(selected.managerActions)}
+    </div>
+
+    <div class="section">
+      <h3>План действий для руководителя</h3>
+      ${renderActions(selected.leaderActions)}
+    </div>
+  `;
+
+  renderInsights(selected);
+}
+
+function detail(label, value) {
+  return `
+    <div class="detail">
+      <span>${label}</span>
+      <strong>${value || "Не указано"}</strong>
+    </div>
+  `;
+}
+
+function renderRisks(risks) {
+  if (risks.length === 0) {
+    return `<div class="empty-state">Критичных рисков не найдено. Сделку стоит поддерживать в текущем ритме.</div>`;
+  }
+
+  return `
+    <ul class="risk-list">
+      ${risks.map((risk) => `
+        <li class="risk-item ${risk.severity}">
+          <strong>${riskSeverityLabel(risk.severity)} · ${risk.title}</strong><br>
+          <span class="muted">${risk.detail}</span>
+        </li>
+      `).join("")}
+    </ul>
+  `;
+}
+
+function renderActions(actions) {
+  return `
+    <ul class="action-list">
+      ${actions.map((action) => `<li class="action-item">${action}</li>`).join("")}
+    </ul>
+  `;
+}
+
+function renderInsights(selected) {
+  const positive = selected.factors
+    .filter((factor) => factor.delta > 0)
+    .sort((a, b) => b.delta - a.delta)
+    .slice(0, 7);
+  const negative = selected.factors
+    .filter((factor) => factor.delta < 0)
+    .sort((a, b) => a.delta - b.delta)
+    .slice(0, 7);
+
+  document.getElementById("insightPanel").innerHTML = `
+    <div>
+      <p class="eyebrow">Объяснение оценки</p>
+      <h3>Что повлияло на расчет</h3>
+    </div>
+    <div>
+      <h3>Усиливает сделку</h3>
+      ${renderFactors(positive)}
+    </div>
+    <div>
+      <h3>Снижает вероятность</h3>
+      ${renderFactors(negative)}
+    </div>
+    <div class="section">
+      <h3>Методология</h3>
+      <p class="muted">База 50%. Поправки применяются по блокам CRM: параметры сделки, качество проработки, партнер, команда Axoft, клиент и история. Итог ограничен диапазоном 5-95%.</p>
+    </div>
+  `;
+}
+
+function renderFactors(factors) {
+  if (factors.length === 0) {
+    return `<div class="empty-state">Нет выраженных факторов.</div>`;
+  }
+  return `
+    <div class="factor-table">
+      ${factors.map((factor) => `
+        <div class="factor-row">
+          <div class="factor-name">${factor.name}</div>
+          <div class="factor-delta ${factor.delta > 0 ? "plus" : "minus"}">${factor.delta > 0 ? "+" : ""}${factor.delta}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+function render() {
+  renderSummary();
+  renderDealList();
+  renderSelectedDeal();
+}
+
+
+
+// JS: UX render layer, business scoring above remains unchanged
+function renderSummary() {
+  const total = state.scored.length;
+  const avg = Math.round(state.scored.reduce((sum, item) => sum + item.probability, 0) / total);
+  const red = state.scored.filter((item) => item.health === "red").length;
+  const green = state.scored.filter((item) => item.health === "green").length;
+  document.getElementById("summaryGrid").innerHTML = [
+    ["Всего сделок", formatNumber.format(total)],
+    ["Средняя вероятность", `${avg}%`],
+    ["Здоровые", formatNumber.format(green)],
+    ["Красная зона", formatNumber.format(red)]
+  ].map(([label, value]) => `
+    <div class="summary-item">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `).join("");
+}
+
+function renderDealList() {
+  const list = document.getElementById("dealList");
+  const visible = getVisibleDeals();
+  if (!visible.some((item) => item.deal[FIELD.id] === state.selectedId) && visible.length > 0) state.selectedId = visible[0].deal[FIELD.id];
+  list.innerHTML = visible.map((item) => {
+    const deal = item.deal;
+    const selected = deal[FIELD.id] === state.selectedId ? " is-selected" : "";
+    return `
+      <button class="deal-row${selected}" data-id="${deal[FIELD.id]}">
+        <span class="status-dot ${item.health}"></span>
+        <span class="deal-row-main">
+          <strong>${deal[FIELD.client]}</strong>
+          <small>${deal[FIELD.id]} · ${deal[FIELD.stage]}</small>
+        </span>
+        <span class="deal-row-score ${item.health}">${item.probability}%</span>
+      </button>`;
+  }).join("");
+  if (visible.length === 0) list.innerHTML = `<div class="empty-state">Сделки по текущему фильтру не найдены.</div>`;
+  list.querySelectorAll(".deal-row").forEach((button) => button.addEventListener("click", () => { state.selectedId = button.dataset.id; render(); }));
+}
+
+function renderSelectedDeal() {
+  const selected = state.scored.find((item) => item.deal[FIELD.id] === state.selectedId) || state.scored[0];
+  if (!selected) return;
+  state.selectedId = selected.deal[FIELD.id];
+  const deal = selected.deal;
+  const critical = selected.risks.filter((risk) => risk.severity === "critical").length;
+  const riskWord = selected.risks.length === 1 ? "риск" : selected.risks.length > 1 && selected.risks.length < 5 ? "риска" : "рисков";
+  document.getElementById("selectedDealName").textContent = `${deal[FIELD.client]} · ${deal[FIELD.id]}`;
+  document.getElementById("dealCard").innerHTML = `
+    <!-- Hero metrics -->
+    <section class="hero-grid">
+      <article class="metric-card card" style="animation-delay: 0.05s">
+        <span class="label">Вероятность закрытия</span>
+        <div class="metric-number ${selected.health}" data-count-target="${selected.probability}">0%</div>
+        <div class="progress-track"><div class="progress-fill ${selected.health}" style="width: 0%" data-width="${selected.probability}%"></div></div>
+        <p>${deal[FIELD.stage]}</p>
+      </article>
+      <article class="metric-card card" style="animation-delay: 0.12s">
+        <span class="label">Здоровье сделки</span>
+        <div class="health-badge ${selected.health}"><span class="status-dot ${selected.health}"></span>${healthLabel(selected.health)}</div>
+        <p>${selected.health === "green" ? "Сделка выглядит управляемой" : selected.health === "yellow" ? "Требует внимания" : "Нужен управленческий контроль"}</p>
+      </article>
+      <article class="metric-card card" style="animation-delay: 0.19s">
+        <span class="label">Риски</span>
+        <div class="metric-number compact ${selected.health}">${selected.risks.length} ${riskWord}</div>
+        <p>${critical} критический · приоритет ${selected.priority.toLowerCase()}</p>
+      </article>
+    </section>
+    <section class="context-card card" style="animation-delay: 0.24s">
+      <div><span class="label">Клиент</span><strong>${deal[FIELD.client]}</strong></div>
+      <div><span class="label">Продукт</span><strong>${deal[FIELD.product]}</strong></div>
+      <div><span class="label">Партнер</span><strong>${deal[FIELD.partner]}</strong></div>
+      <div><span class="label">Сумма</span><strong>${formatRub.format(number(deal[FIELD.amount]))}</strong></div>
+    </section>
+    <section class="content-grid">
+      <article class="panel card" style="animation-delay: 0.3s"><div class="panel-heading"><h2>Ключевые риски</h2><span>${selected.risks.length} выявлено</span></div>${renderRisks(selected.risks)}</article>
+      <article class="panel card" style="animation-delay: 0.36s"><div class="panel-heading"><h2>Факторы оценки</h2><span>Top impact</span></div>${renderFactorRatings(selected)}</article>
+    </section>
+    <section class="panel card recommendations-card" style="animation-delay: 0.42s">
+      <div class="tabs" role="tablist"><button class="tab is-active" data-tab="manager" role="tab">Для менеджера</button><button class="tab" data-tab="leader" role="tab">Для руководителя</button></div>
+      <div class="tab-panel is-active" id="managerPanel">${renderRecommendationCards(selected.managerActions, selected.risks)}</div>
+      <div class="tab-panel" id="leaderPanel">${renderRecommendationCards(selected.leaderActions, selected.risks)}</div>
+    </section>
+    <details class="methodology card" style="animation-delay: 0.48s"><summary>Как рассчитывается вероятность?</summary><div class="methodology-body"><p>База 50%. Далее применяются прозрачные поправки по блокам CRM: параметры сделки, качество проработки, партнер, команда Axoft, клиент и история. Итог ограничен диапазоном 5-95%.</p><div class="weights-table">${renderWeightsTable(selected.factors)}</div></div></details>`;
+  wireTabs();
+  animateMetrics();
+}
+
+function renderRisks(risks) {
+  if (risks.length === 0) return `<div class="empty-state">Критичных рисков не найдено. Сделку стоит поддерживать в текущем ритме.</div>`;
+  return `<ul class="risk-list">${risks.map((risk) => `<li class="risk-item ${risk.severity}"><span class="risk-dot ${risk.severity}"></span><span><strong>${risk.title}</strong><small>${riskSeverityLabel(risk.severity)} · ${risk.detail}</small></span></li>`).join("")}</ul>`;
+}
+
+function renderInsights(selected) { return selected; }
+
+function renderFactorRatings(selected) {
+  const ranked = [...selected.factors].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 8);
+  return `<div class="factor-rating-list">${ranked.map((factor) => {
+    const score = Math.max(1, Math.min(5, Math.ceil(Math.abs(factor.delta) / 4)));
+    return `<div class="factor-rating-row"><span>${factor.name}</span><strong class="${factor.delta > 0 ? "plus" : "minus"}">${factor.delta > 0 ? "+" : ""}${factor.delta}</strong><span class="dot-rating">${Array.from({ length: 5 }, (_, index) => `<i class="${index < score ? "filled" : ""}"></i>`).join("")}</span></div>`;
+  }).join("")}</div>`;
+}
+
+function renderRecommendationCards(actions, risks) {
+  const hasCritical = risks.some((risk) => risk.severity === "critical");
+  return `<ol class="recommendation-list">${actions.map((action, index) => `<li class="recommendation-card"><span class="rec-index">${index + 1}</span><span class="rec-text">${action}</span><span class="priority-badge ${hasCritical || index === 0 ? "high" : "medium"}">${hasCritical || index === 0 ? "Высокий" : "Средний"}</span></li>`).join("")}</ol>`;
+}
+
+function renderWeightsTable(factors) {
+  return factors.map((factor) => `<div class="weight-row"><span>${factor.group}</span><strong>${factor.name}</strong><em class="${factor.delta > 0 ? "plus" : "minus"}">${factor.delta > 0 ? "+" : ""}${factor.delta}</em></div>`).join("");
+}
+
+function wireTabs() {
+  document.querySelectorAll(".tab").forEach((tab) => tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((item) => item.classList.remove("is-active"));
+    document.querySelectorAll(".tab-panel").forEach((item) => item.classList.remove("is-active"));
+    tab.classList.add("is-active");
+    document.getElementById(`${tab.dataset.tab}Panel`).classList.add("is-active");
+  }));
+}
+
+function animateMetrics() {
+  requestAnimationFrame(() => document.querySelectorAll(".progress-fill").forEach((bar) => { bar.style.width = bar.dataset.width; }));
+  document.querySelectorAll("[data-count-target]").forEach((node) => {
+    const target = Number(node.dataset.countTarget);
+    const start = performance.now();
+    const duration = 600;
+    const tick = (now) => {
+      const progress = Math.min(1, (now - start) / duration);
+      node.textContent = `${Math.round(target * progress)}%`;
+      if (progress < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+
+function render() { renderSummary(); renderDealList(); renderSelectedDeal(); }
+
+function recalculateCurrentDeal() {
+  const button = document.getElementById("recalculateButton");
+  button.classList.add("is-loading");
+  button.disabled = true;
+  setTimeout(() => {
+    state.scored = state.deals.map(scoreDeal);
+    render();
+    button.classList.remove("is-loading");
+    button.disabled = false;
+  }, 500);
+}
+
+function init() {
+  state.deals = JSON.parse(document.getElementById("deals-data").textContent);
+  state.scored = state.deals.map(scoreDeal);
+  state.selectedId = state.scored[0]?.deal[FIELD.id] || null;
+  document.getElementById("searchInput").addEventListener("input", (event) => { state.search = event.target.value; render(); });
+  document.getElementById("recalculateButton").addEventListener("click", recalculateCurrentDeal);
+  document.querySelectorAll("[data-health]").forEach((button) => button.addEventListener("click", () => {
+    state.health = button.dataset.health;
+    document.querySelectorAll("[data-health]").forEach((chip) => chip.classList.remove("is-active"));
+    button.classList.add("is-active");
+    render();
+  }));
+  render();
+}
+
+init();
+</script>
   </body>
 </html>
