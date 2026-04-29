@@ -71,7 +71,7 @@ button { cursor: pointer; }
   width: min(1440px, calc(100% - 48px));
   margin: 0 auto;
   display: grid;
-  grid-template-columns: 1fr minmax(220px, auto) auto;
+  grid-template-columns: 1fr auto minmax(220px, auto) auto;
   align-items: center;
   gap: 20px;
 }
@@ -82,6 +82,9 @@ button { cursor: pointer; }
 .product-name span { color: rgba(255,255,255,0.72); font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; }
 .product-name strong { color: #fff; font-size: 18px; line-height: 1.15; }
 .selected-deal { color: rgba(255,255,255,0.72); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.role-switch { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid rgba(255,255,255,0.16); border-radius: 999px; background: rgba(255,255,255,0.08); }
+.role-button { border: 0; border-radius: 999px; background: transparent; color: rgba(255,255,255,0.72); padding: 8px 12px; font-size: 13px; font-weight: 750; white-space: nowrap; }
+.role-button.is-active { background: #fff; color: var(--color-navy); }
 .primary-button {
   border: 0;
   border-radius: var(--radius-button);
@@ -115,12 +118,18 @@ button { cursor: pointer; }
 .summary-item span { color: var(--color-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
 .summary-item strong { display: block; margin-top: 7px; font-size: 24px; color: var(--color-navy); }
 .deal-list { display: grid; gap: 8px; max-height: 280px; overflow: auto; }
+.manager-group { display: grid; gap: 8px; }
+.manager-group + .manager-group { margin-top: 12px; padding-top: 12px; border-top: 1px solid #DFD9CF; }
+.manager-group-header { display: flex; justify-content: space-between; gap: 10px; align-items: center; color: var(--color-muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; }
+.manager-group-header strong { color: var(--color-navy); font-size: 13px; letter-spacing: 0; text-transform: none; }
+.manager-group-header span { color: var(--color-danger-text); }
 .deal-row { width: 100%; border: 1px solid var(--color-border); border-radius: 12px; background: #fff; padding: 14px 16px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; text-align: left; transition: background 150ms ease, border-color 150ms ease, transform 150ms ease, box-shadow 150ms ease; }
 .deal-row:hover, .deal-row.is-selected { background: #FAFDFD; border-color: var(--color-border-strong); box-shadow: 0 6px 18px rgba(23, 38, 74, 0.08); }
 .deal-row-main { min-width: 0; }
 .deal-row-main strong, .deal-row-main small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deal-row-main small { color: var(--color-muted); margin-top: 2px; }
 .deal-row-score { font-weight: 700; }
+.deal-row-score small { display: block; margin-top: 2px; color: var(--color-danger-text); font-size: 11px; font-weight: 800; white-space: nowrap; }
 .deal-row-score.green, .metric-number.green { color: var(--color-success-text); }
 .deal-row-score.yellow, .metric-number.yellow { color: var(--color-warning-text); }
 .deal-row-score.red, .metric-number.red { color: var(--color-danger-text); }
@@ -278,6 +287,14 @@ button { cursor: pointer; }
 .deal-workspace { min-width: 0; display: grid; gap: 20px; }
 .workspace-header { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(520px, 0.9fr); gap: 24px; align-items: end; }
 .workspace-header h1 { margin: 8px 0 0; font-size: 28px; line-height: 1.15; color: var(--color-navy); letter-spacing: -0.01em; }
+.role-note { margin: 10px 0 0; color: var(--color-muted); line-height: 1.45; }
+.leader-dashboard { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.leader-card { border: 1px solid var(--color-border); border-radius: 12px; background: #fff; padding: 16px; }
+.leader-card span { display: block; color: var(--color-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.leader-card strong { display: block; margin-top: 8px; color: var(--color-navy); font-size: 24px; line-height: 1.1; }
+.leader-card small { display: block; margin-top: 7px; color: var(--color-muted); line-height: 1.35; }
+.leader-card.danger { background: var(--color-danger-bg); border-color: rgba(185,28,28,0.18); }
+.leader-card.danger strong { color: var(--color-danger-text); }
 .filter-strip { position: sticky; top: 92px; z-index: 40; display: grid; grid-template-columns: 260px minmax(0, 1fr) max-content; gap: 16px; align-items: center; padding: 14px 16px; border-top: 0; overflow: visible; }
 .filter-strip-meta { display: grid; gap: 3px; min-width: 150px; }
 .filter-strip-meta strong { color: var(--color-navy); }
@@ -324,7 +341,9 @@ button { cursor: pointer; }
 .action-tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--color-border); }
 .action-tabs .tab { padding-bottom: 12px; }
 @media (max-width: 1180px) {
-  .crm-layout, .deal-detail-layout, .workspace-header { grid-template-columns: 1fr; }
+  .crm-layout, .deal-detail-layout, .workspace-header, .leader-dashboard { grid-template-columns: 1fr; }
+  .header-inner { grid-template-columns: 1fr; height: auto; padding: 14px 0; }
+  .app-header { height: auto; }
   .deal-sidebar, .insight-card { position: static; height: auto; max-height: none; }
   .filter-dropdown-row { flex-wrap: wrap; overflow-x: visible; }
 }
@@ -348,6 +367,10 @@ button { cursor: pointer; }
             <span>Внутренний сервис</span>
             <strong>AI-Ассистент сделки</strong>
           </div>
+        </div>
+        <div class="role-switch" aria-label="Режим работы">
+          <button class="role-button is-active" type="button" data-role="manager">Рабочее место менеджера</button>
+          <button class="role-button" type="button" data-role="leader">Панель руководителя</button>
         </div>
         <div class="selected-deal" id="selectedDealName">Загрузка сделки</div>
         <button class="primary-button" id="recalculateButton"><span class="spinner"></span>Пересчитать</button>
@@ -378,10 +401,12 @@ button { cursor: pointer; }
         <div class="workspace-header">
           <div>
             <span class="section-kicker">Локальная демо-версия</span>
-            <h1>Оценка сделки по утвержденной методологии</h1>
+            <h1 id="workspaceTitle">Рабочее место менеджера</h1>
+            <p class="role-note" id="workspaceNote">Мои сделки, рекомендации и задачи CRM.</p>
           </div>
           <div class="summary-grid" id="summaryGrid"></div>
         </div>
+        <section class="leader-dashboard" id="leaderDashboard" hidden></section>
 
         <section class="filter-strip card" aria-label="Фильтры сделок">
           <div class="filter-strip-meta">
@@ -4413,6 +4438,8 @@ const segmentWeights = {
 const state = {
   deals: [],
   scored: [],
+  role: "manager",
+  currentManager: "",
   selectedId: null,
   search: "",
   health: "all",
@@ -4828,14 +4855,7 @@ function renderSelectedDeal() {
 
         <section class="panel card action-card" style="animation-delay: 0.2s">
           <div class="panel-heading"><h2>Рекомендации и задачи</h2><span>${getTasksForDeal(deal[FIELD.id]).length} задач CRM</span></div>
-          <div class="tabs action-tabs" role="tablist">
-            <button class="tab is-active" data-tab="manager" role="tab">Для менеджера</button>
-            <button class="tab" data-tab="leader" role="tab">Для руководителя</button>
-            <button class="tab" data-tab="tasks" role="tab">Задачи CRM</button>
-          </div>
-          <div class="tab-panel is-active" id="managerPanel">${renderRecommendationCards(selected.managerActions, selected.risks, "manager")}</div>
-          <div class="tab-panel" id="leaderPanel">${renderRecommendationCards(selected.leaderActions, selected.risks, "leader")}</div>
-          <div class="tab-panel" id="tasksPanel">${renderCrmTasks(deal[FIELD.id])}</div>
+          ${renderRoleActionPanels(selected)}
         </section>
 
         <details class="methodology card" style="animation-delay: 0.26s"><summary>Как рассчитывается вероятность?</summary><div class="methodology-body"><p>База 50%. Далее применяются прозрачные поправки по блокам CRM: параметры сделки, качество проработки, партнер, команда Axoft, клиент и история. Итог ограничен диапазоном 5-95%.</p><div class="weights-table">${renderWeightsTable(selected.factors)}</div></div></details>
@@ -4857,6 +4877,21 @@ function renderSelectedDeal() {
   wireRecommendationButtons();
   wireTaskStatusControls();
   animateMetrics();
+}
+
+function renderRoleActionPanels(selected) {
+  const dealId = selected.deal[FIELD.id];
+  const role = state.role === "leader" ? "leader" : "manager";
+  const label = role === "leader" ? "Для руководителя" : "Для менеджера";
+  const actions = role === "leader" ? selected.leaderActions : selected.managerActions;
+  return `
+    <div class="tabs action-tabs" role="tablist">
+      <button class="tab is-active" data-tab="roleActions" role="tab">${label}</button>
+      <button class="tab" data-tab="tasks" role="tab">Задачи CRM</button>
+    </div>
+    <div class="tab-panel is-active" id="roleActionsPanel">${renderRecommendationCards(actions, selected.risks, role)}</div>
+    <div class="tab-panel" id="tasksPanel">${renderCrmTasks(dealId)}</div>
+  `;
 }
 
 function renderRisks(risks) {
@@ -4939,9 +4974,16 @@ function render() {
 
 
 // JS: UX render layer, business scoring above remains unchanged
+function getRoleBaseDeals() {
+  if (state.role === "manager") {
+    return state.scored.filter((item) => item.deal[FIELD.manager] === state.currentManager);
+  }
+  return state.scored;
+}
+
 function getVisibleDeals() {
   const query = state.search.trim().toLowerCase();
-  return state.scored.filter((item) => {
+  return getRoleBaseDeals().filter((item) => {
     const deal = item.deal;
     if (state.health !== "all" && item.health !== state.health) return false;
     if (state.filters.partner.size && !state.filters.partner.has(deal[FIELD.partner])) return false;
@@ -4966,12 +5008,22 @@ function renderSummary() {
   const avg = total ? Math.round(visible.reduce((sum, item) => sum + item.probability, 0) / total) : 0;
   const red = visible.filter((item) => item.health === "red").length;
   const green = visible.filter((item) => item.health === "green").length;
-  document.getElementById("summaryGrid").innerHTML = [
-    ["Сделок", formatNumber.format(total)],
+  const critical = visible.reduce((sum, item) => sum + item.risks.filter((risk) => risk.severity === "critical").length, 0);
+  const riskAmount = visible.filter((item) => item.health === "red").reduce((sum, item) => sum + number(item.deal[FIELD.amount]), 0);
+  const summary = state.role === "leader"
+    ? [
+      ["Сделок команды", formatNumber.format(total)],
+      ["Средняя вероятность", `${avg}%`],
+      ["Красные", formatNumber.format(red)],
+      ["Сумма под риском", formatRub.format(riskAmount)]
+    ]
+    : [
+      ["Моих сделок", formatNumber.format(total)],
     ["Средняя вероятность", `${avg}%`],
     ["Здоровые", formatNumber.format(green)],
-    ["Красные", formatNumber.format(red)]
-  ].map(([label, value]) => `
+      ["Крит. риски", formatNumber.format(critical)]
+    ];
+  document.getElementById("summaryGrid").innerHTML = summary.map(([label, value]) => `
     <div class="summary-item">
       <span>${label}</span>
       <strong>${value}</strong>
@@ -4983,9 +5035,19 @@ function renderDealList() {
   const list = document.getElementById("dealList");
   const visible = getVisibleDeals();
   if (!visible.some((item) => item.deal[FIELD.id] === state.selectedId) && visible.length > 0) state.selectedId = visible[0].deal[FIELD.id];
-  list.innerHTML = visible.map((item) => {
+  if (state.role === "leader") {
+    list.innerHTML = renderGroupedDealList(visible);
+  } else {
+    list.innerHTML = visible.map((item) => renderDealRow(item)).join("");
+  }
+  if (visible.length === 0) list.innerHTML = `<div class="empty-state">Сделки по текущему фильтру не найдены.</div>`;
+  list.querySelectorAll(".deal-row").forEach((button) => button.addEventListener("click", () => { state.selectedId = button.dataset.id; render(); }));
+}
+
+function renderDealRow(item) {
     const deal = item.deal;
     const selected = deal[FIELD.id] === state.selectedId ? " is-selected" : "";
+    const critical = item.risks.filter((risk) => risk.severity === "critical").length;
     return `
       <button class="deal-row${selected}" data-id="${deal[FIELD.id]}">
         <span class="status-dot ${item.health}"></span>
@@ -4994,11 +5056,20 @@ function renderDealList() {
           <small>${deal[FIELD.client]} · ${deal[FIELD.stage]}</small>
           <small>${deal[FIELD.partner]} · ${formatRub.format(number(deal[FIELD.amount]))}</small>
         </span>
-        <span class="deal-row-score ${item.health}">${item.probability}%</span>
+        <span class="deal-row-score ${item.health}">${item.probability}%${critical ? `<br><small>${critical} крит.</small>` : ""}</span>
       </button>`;
+}
+
+function renderGroupedDealList(items) {
+  const managers = [...new Set(items.map((item) => item.deal[FIELD.manager]))].sort();
+  return managers.map((manager) => {
+    const deals = items.filter((item) => item.deal[FIELD.manager] === manager);
+    const critical = deals.reduce((sum, item) => sum + item.risks.filter((risk) => risk.severity === "critical").length, 0);
+    return `<section class="manager-group">
+      <div class="manager-group-header"><strong>${manager}</strong><span>${deals.length} сделок · ${critical} крит.</span></div>
+      ${deals.map((item) => renderDealRow(item)).join("")}
+    </section>`;
   }).join("");
-  if (visible.length === 0) list.innerHTML = `<div class="empty-state">Сделки по текущему фильтру не найдены.</div>`;
-  list.querySelectorAll(".deal-row").forEach((button) => button.addEventListener("click", () => { state.selectedId = button.dataset.id; render(); }));
 }
 
 function renderSelectedDeal() {
@@ -5160,7 +5231,11 @@ function saveTasks() {
 }
 
 function getTasksForDeal(dealId) {
-  return state.tasks.filter((task) => task.dealId === dealId);
+  return state.tasks.filter((task) => {
+    if (task.dealId !== dealId) return false;
+    if (state.role === "manager") return task.assignee === state.currentManager;
+    return true;
+  });
 }
 
 function defaultDueDate(priority) {
@@ -5312,7 +5387,51 @@ function animateMetrics() {
   });
 }
 
-function render() { renderSummary(); renderDealList(); renderSelectedDeal(); }
+function renderRoleChrome() {
+  document.querySelectorAll("[data-role]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.role === state.role);
+  });
+  const isLeader = state.role === "leader";
+  document.getElementById("workspaceTitle").textContent = isLeader ? "Панель руководителя" : "Рабочее место менеджера";
+  document.getElementById("workspaceNote").textContent = isLeader
+    ? "Командная воронка, критические сделки, управленческие задачи менеджерам."
+    : `${state.currentManager}: мои сделки, рекомендации и задачи CRM.`;
+  document.querySelector(".sidebar-title span").textContent = isLeader ? "Team pipeline" : "My pipeline";
+  document.querySelector(".sidebar-title strong").textContent = isLeader ? "Сделки по менеджерам" : "Мои сделки";
+  document.getElementById("leaderDashboard").hidden = !isLeader;
+}
+
+function renderLeaderDashboard() {
+  const dashboard = document.getElementById("leaderDashboard");
+  if (state.role !== "leader") {
+    dashboard.innerHTML = "";
+    return;
+  }
+  const deals = getVisibleDeals();
+  const redDeals = deals.filter((item) => item.health === "red");
+  const criticalRisks = deals.reduce((sum, item) => sum + item.risks.filter((risk) => risk.severity === "critical").length, 0);
+  const riskAmount = redDeals.reduce((sum, item) => sum + number(item.deal[FIELD.amount]), 0);
+  const managerStats = [...new Set(deals.map((item) => item.deal[FIELD.manager]))].map((manager) => {
+    const managerDeals = deals.filter((item) => item.deal[FIELD.manager] === manager);
+    const red = managerDeals.filter((item) => item.health === "red").length;
+    return { manager, red, total: managerDeals.length };
+  }).sort((a, b) => b.red - a.red || b.total - a.total);
+  const focus = managerStats[0];
+  dashboard.innerHTML = `
+    <article class="leader-card danger"><span>Красные сделки</span><strong>${formatNumber.format(redDeals.length)}</strong><small>Требуют управленческого контроля</small></article>
+    <article class="leader-card danger"><span>Критические риски</span><strong>${formatNumber.format(criticalRisks)}</strong><small>ЛПР, бюджет, ритм коммуникаций</small></article>
+    <article class="leader-card"><span>Сумма под риском</span><strong>${formatRub.format(riskAmount)}</strong><small>Открытые сделки с красным здоровьем</small></article>
+    <article class="leader-card"><span>Фокус менеджер</span><strong>${focus ? focus.manager : "Нет данных"}</strong><small>${focus ? `${focus.red} красных из ${focus.total} сделок` : "Нет сделок в выборке"}</small></article>
+  `;
+}
+
+function render() {
+  renderRoleChrome();
+  renderSummary();
+  renderLeaderDashboard();
+  renderDealList();
+  renderSelectedDeal();
+}
 
 function recalculateCurrentDeal() {
   const button = document.getElementById("recalculateButton");
@@ -5339,11 +5458,11 @@ function amountInRange(value, rangeId) {
 }
 
 function uniqueValues(field) {
-  return [...new Set(state.deals.map((deal) => deal[field]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), "ru"));
+  return [...new Set(getRoleBaseDeals().map((item) => item.deal[field]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), "ru"));
 }
 
 function countForOption(field, value) {
-  return state.deals.filter((deal) => deal[field] === value).length;
+  return getRoleBaseDeals().filter((item) => item.deal[field] === value).length;
 }
 
 function selectedFilterCount() {
@@ -5354,7 +5473,7 @@ function renderFilterPanel() {
   const config = [
     { key: "partner", label: "Партнер", field: FIELD.partner, searchable: true },
     { key: "client", label: "Клиент", field: FIELD.client, searchable: true },
-    { key: "manager", label: "Менеджер", field: FIELD.manager, searchable: true },
+    ...(state.role === "leader" ? [{ key: "manager", label: "Менеджер", field: FIELD.manager, searchable: true }] : []),
     { key: "amount", label: "Сумма сделки", amount: true }
   ];
   document.getElementById("activeFilterSummary").textContent = selectedFilterCount()
@@ -5366,7 +5485,7 @@ function renderFilterPanel() {
 
 function renderFilterGroup(item) {
   const options = item.amount
-    ? amountRanges.map((range) => ({ value: range.id, label: range.label, count: state.deals.filter((deal) => range.test(number(deal[FIELD.amount]))).length }))
+    ? amountRanges.map((range) => ({ value: range.id, label: range.label, count: getRoleBaseDeals().filter((item) => range.test(number(item.deal[FIELD.amount]))).length }))
     : uniqueValues(item.field)
       .filter((value) => String(value).toLowerCase().includes((state.filterSearch[item.key] || "").toLowerCase()))
       .map((value) => ({ value, label: value, count: countForOption(item.field, value) }));
@@ -5450,13 +5569,31 @@ function handleDocumentClick(event) {
   }
 }
 
+function switchRole(role) {
+  state.role = role;
+  closeOpenFilter();
+  if (role === "manager") state.filters.manager.clear();
+  const visible = getVisibleDeals();
+  state.selectedId = visible[0]?.deal[FIELD.id] || null;
+  renderFilterPanel();
+  render();
+}
+
+function pickDemoManager(deals) {
+  const counts = new Map();
+  deals.forEach((deal) => counts.set(deal[FIELD.manager], (counts.get(deal[FIELD.manager]) || 0) + 1));
+  return [...counts.entries()].sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0]), "ru"))[0]?.[0] || "";
+}
+
 function init() {
   state.deals = JSON.parse(document.getElementById("deals-data").textContent);
   state.scored = state.deals.map(scoreDeal);
+  state.currentManager = pickDemoManager(state.deals);
   state.tasks = loadTasks();
-  state.selectedId = state.scored[0]?.deal[FIELD.id] || null;
+  state.selectedId = getVisibleDeals()[0]?.deal[FIELD.id] || null;
   document.getElementById("searchInput").addEventListener("input", (event) => { state.search = event.target.value; render(); });
   document.getElementById("recalculateButton").addEventListener("click", recalculateCurrentDeal);
+  document.querySelectorAll("[data-role]").forEach((button) => button.addEventListener("click", () => switchRole(button.dataset.role)));
   document.getElementById("taskForm").addEventListener("submit", createTaskFromForm);
   document.getElementById("taskModalClose").addEventListener("click", closeTaskModal);
   document.getElementById("taskCancelButton").addEventListener("click", closeTaskModal);
