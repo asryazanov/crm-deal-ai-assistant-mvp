@@ -4930,7 +4930,7 @@ function renderSelectedDeal() {
 
 function renderRoleActionPanels(selected) {
   const dealId = selected.deal[FIELD.id];
-  const role = state.role === "leader" ? "leader" : "manager";
+  const role = state.role === "leader" || (state.role === "allDeals" && state.accessRole === "leader") ? "leader" : "manager";
   const label = role === "leader" ? "Для руководителя" : "Для менеджера";
   const actions = role === "leader" ? selected.leaderActions : selected.managerActions;
   return `
@@ -5225,6 +5225,9 @@ function renderAllDealsScreen() {
       state.allDealsDetailOpen = false;
       render();
     });
+    wireTabs();
+    wireRecommendationButtons();
+    wireTaskStatusControls();
     animateMetrics();
     return;
   }
@@ -5406,6 +5409,12 @@ function renderDealPreview(selected) {
           <div class="panel-heading"><h2>Ключевые риски</h2><span>${selected.risks.length} выявлено · ${critical} крит. · ${high} высоких</span></div>
           ${renderRisks(selected.risks)}
         </article>
+        <section class="panel card action-card">
+          <div class="panel-heading"><h2>Рекомендации и задачи</h2><span>${getTasksForDeal(deal[FIELD.id]).length} задач CRM</span></div>
+          ${renderRoleActionPanels(selected)}
+        </section>
+        ${renderScoreExplanation(selected)}
+        <details class="methodology card"><summary>Как рассчитывается вероятность?</summary><div class="methodology-body"><p>База 50%. Далее применяются прозрачные поправки по блокам CRM: параметры сделки, качество проработки, партнер, команда Axoft, клиент и история. Итог ограничен диапазоном 5-95%.</p><div class="weights-table">${renderWeightsTable(selected.factors)}</div></div></details>
       </div>
     </section>`;
 }
