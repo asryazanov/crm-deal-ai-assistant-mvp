@@ -349,6 +349,25 @@ button { cursor: pointer; }
 .score-explain-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 18px; }
 .score-explain h3 { margin: 0 0 12px; color: var(--color-text); font-size: 16px; }
 .deals-table-card { display: grid; gap: 16px; }
+.all-deals-controls { display: grid; gap: 18px; }
+.all-deals-topline { display: grid; grid-template-columns: minmax(320px, 1fr) auto; gap: 18px; align-items: end; }
+.view-toggle { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--color-border); border-radius: 999px; background: #fff; }
+.view-toggle button { border: 0; border-radius: 999px; background: transparent; color: var(--color-muted); padding: 8px 12px; font-weight: 800; }
+.view-toggle button.is-active { background: var(--color-teal-soft); color: var(--color-primary); }
+.all-deals-list { display: grid; gap: 12px; }
+.all-deal-card { width: 100%; border: 1px solid var(--color-border); border-radius: 14px; background: #fff; padding: 18px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 18px; align-items: center; text-align: left; transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease; }
+.all-deal-card:hover { border-color: var(--color-border-strong); box-shadow: 0 10px 24px rgba(23,38,74,0.09); transform: translateY(-1px); }
+.all-deal-main { min-width: 0; display: grid; gap: 6px; }
+.all-deal-title { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.all-deal-title strong { color: var(--color-text); font-size: 18px; }
+.all-deal-title span { color: var(--color-muted); font-weight: 700; }
+.all-deal-subtitle { color: var(--color-muted); font-size: 14px; line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.all-deal-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.all-deal-tags em { font-style: normal; border-radius: 999px; background: #F4F7F8; color: var(--color-muted); padding: 4px 8px; font-size: 12px; font-weight: 800; }
+.all-deal-tags em.danger { background: var(--color-danger-bg); color: var(--color-danger-text); }
+.all-deal-score { display: grid; gap: 4px; justify-items: end; min-width: 92px; }
+.all-deal-score strong { font-size: 24px; }
+.all-deals-back { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 16px; }
 .deals-table-wrap { overflow: auto; border: 1px solid var(--color-border); border-radius: 12px; background: #fff; }
 .deals-table { width: 100%; border-collapse: collapse; min-width: 1120px; }
 .deals-table th, .deals-table td { padding: 12px 14px; border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: middle; }
@@ -375,6 +394,8 @@ button { cursor: pointer; }
 }
 @media (max-width: 820px) {
   .deal-hero, .deal-detail-grid, .filter-strip, .score-explain-body { grid-template-columns: 1fr; }
+  .all-deals-topline, .all-deal-card { grid-template-columns: 1fr; }
+  .all-deal-score { justify-items: start; }
   .score-donut { justify-self: start; }
   .filter-menu { position: static; width: 100%; box-shadow: none; margin-top: 8px; }
 }
@@ -4488,6 +4509,8 @@ const state = {
   },
   openFilter: null,
   tableSort: { key: "critical", direction: "desc" },
+  allDealsView: "list",
+  allDealsDetailOpen: false,
   tasks: [],
   taskDraft: null
 };
@@ -5168,19 +5191,83 @@ function getSortedDeals(items) {
   });
 }
 
+function getDefaultSortedDeals(items) {
+  const healthOrder = { red: 0, yellow: 1, green: 2 };
+  return [...items].sort((a, b) => {
+    const healthDelta = (healthOrder[a.health] ?? 9) - (healthOrder[b.health] ?? 9);
+    if (healthDelta) return healthDelta;
+    const criticalDelta = b.risks.filter((risk) => risk.severity === "critical").length - a.risks.filter((risk) => risk.severity === "critical").length;
+    if (criticalDelta) return criticalDelta;
+    return number(b.deal[FIELD.amount]) - number(a.deal[FIELD.amount]);
+  });
+}
+
 function renderAllDealsScreen() {
-  const visible = getSortedDeals(getVisibleDeals());
+  const visible = state.allDealsView === "table" ? getSortedDeals(getVisibleDeals()) : getDefaultSortedDeals(getVisibleDeals());
   if (!visible.length) {
     document.getElementById("selectedDealName").textContent = "Нет сделок по фильтрам";
-    document.getElementById("dealCard").innerHTML = `<section class="card empty-state">Измените фильтры или очистите поиск, чтобы увидеть список сделок.</section>`;
+    document.getElementById("dealCard").innerHTML = `${renderAllDealsControls(0)}<section class="card empty-state">Измените фильтры или очистите поиск, чтобы увидеть список сделок.</section>`;
+    wireAllDealsControls();
     return;
   }
   if (!visible.some((item) => item.deal[FIELD.id] === state.selectedId)) state.selectedId = visible[0].deal[FIELD.id];
   const selected = visible.find((item) => item.deal[FIELD.id] === state.selectedId) || visible[0];
   document.getElementById("selectedDealName").textContent = `Все сделки · ${visible.length}`;
+  if (state.allDealsDetailOpen) {
+    document.getElementById("dealCard").innerHTML = `
+      <div class="all-deals-back">
+        <button class="secondary-button" type="button" id="backToAllDeals">Назад ко всем сделкам</button>
+        <span class="muted">${selected.deal[FIELD.id]} · ${selected.deal[FIELD.client]}</span>
+      </div>
+      <section class="deal-preview">${renderDealPreview(selected)}</section>
+    `;
+    document.getElementById("backToAllDeals").addEventListener("click", () => {
+      state.allDealsDetailOpen = false;
+      render();
+    });
+    animateMetrics();
+    return;
+  }
   document.getElementById("dealCard").innerHTML = `
+    ${renderAllDealsControls(visible.length)}
+    ${state.allDealsView === "table" ? renderAllDealsTable(visible) : renderAllDealsList(visible)}
+  `;
+  wireAllDealsControls();
+  wireDealsTable();
+}
+
+function renderAllDealsControls(count) {
+  return `
     <section class="deals-table-card card">
-      <div class="panel-heading"><h2>Реестр сделок</h2><span>${visible.length} в выборке</span></div>
+      <div class="panel-heading"><h2>Все сделки</h2><span>${count} в выборке</span></div>
+      <div class="all-deals-controls">
+        <div class="all-deals-topline">
+          <label class="search-box">
+            <span>Поиск</span>
+            <input id="allDealsSearchInput" type="search" value="${state.search}" placeholder="ID, клиент, партнер, менеджер">
+          </label>
+          <div class="view-toggle" aria-label="Вид списка">
+            <button type="button" data-all-deals-view="list" class="${state.allDealsView === "list" ? "is-active" : ""}">Список</button>
+            <button type="button" data-all-deals-view="table" class="${state.allDealsView === "table" ? "is-active" : ""}">Таблица</button>
+          </div>
+        </div>
+        <div class="filter-row">
+          ${[
+            ["all", "Все"],
+            ["green", "Зеленые"],
+            ["yellow", "Желтые"],
+            ["red", "Красные"]
+          ].map(([health, label]) => `<button class="chip ${state.health === health ? "is-active" : ""}" type="button" data-all-health="${health}">${label}</button>`).join("")}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderAllDealsTable(visible) {
+  return `
+    <section class="deals-table-card card">
+      <div class="panel-heading"><h2>Таблица сделок</h2><span>Клик по строке откроет карточку</span></div>
       <div class="deals-table-wrap">
         <table class="deals-table">
           <thead><tr>
@@ -5200,13 +5287,64 @@ function renderAllDealsScreen() {
           </tbody>
         </table>
       </div>
-    </section>
-    <section class="deal-preview">${renderDealPreview(selected)}</section>
-  `;
-  wireDealsTable();
-  wireRecommendationButtons();
-  wireTaskStatusControls();
-  animateMetrics();
+    </section>`;
+}
+
+function renderAllDealsList(visible) {
+  return `
+    <section class="all-deals-list">
+      ${visible.map((item) => renderAllDealCard(item)).join("")}
+    </section>`;
+}
+
+function renderAllDealCard(item) {
+  const deal = item.deal;
+  const critical = item.risks.filter((risk) => risk.severity === "critical").length;
+  const high = item.risks.filter((risk) => risk.severity === "high").length;
+  return `
+    <button class="all-deal-card" type="button" data-deal-id="${deal[FIELD.id]}">
+      <span class="status-dot ${item.health}"></span>
+      <span class="all-deal-main">
+        <span class="all-deal-title"><strong>${deal[FIELD.id]}</strong><span>${deal[FIELD.client]} · ${deal[FIELD.stage]}</span></span>
+        <span class="all-deal-subtitle">${deal[FIELD.partner]} · ${formatRub.format(number(deal[FIELD.amount]))}</span>
+        <span class="all-deal-tags">
+          <em>${deal[FIELD.manager]}</em>
+          <em>${item.risks.length} рисков</em>
+          ${critical ? `<em class="danger">${critical} крит.</em>` : ""}
+          ${high ? `<em>${high} высок.</em>` : ""}
+        </span>
+      </span>
+      <span class="all-deal-score">
+        <strong class="deal-row-score ${item.health}">${item.probability}%</strong>
+        <span class="status-pill ${item.health}">${healthLabel(item.health)}</span>
+      </span>
+    </button>`;
+}
+
+function wireAllDealsControls() {
+  const search = document.getElementById("allDealsSearchInput");
+  if (search) {
+    search.addEventListener("input", (event) => {
+      state.search = event.target.value;
+      state.allDealsDetailOpen = false;
+      render();
+    });
+  }
+  document.querySelectorAll("[data-all-health]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.health = button.dataset.allHealth;
+      state.allDealsDetailOpen = false;
+      document.querySelectorAll("[data-health]").forEach((chip) => chip.classList.toggle("is-active", chip.dataset.health === state.health));
+      render();
+    });
+  });
+  document.querySelectorAll("[data-all-deals-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.allDealsView = button.dataset.allDealsView;
+      state.allDealsDetailOpen = false;
+      render();
+    });
+  });
 }
 
 function renderSortHeader(key, label) {
@@ -5276,6 +5414,7 @@ function wireDealsTable() {
   document.querySelectorAll("[data-deal-id]").forEach((row) => {
     row.addEventListener("click", () => {
       state.selectedId = row.dataset.dealId;
+      state.allDealsDetailOpen = true;
       render();
     });
   });
@@ -5794,6 +5933,7 @@ function handleDocumentClick(event) {
 function switchRole(role) {
   if (role === "manager" || role === "leader") state.accessRole = role;
   state.role = role;
+  state.allDealsDetailOpen = false;
   closeOpenFilter();
   if (role === "manager") state.filters.manager.clear();
   const visible = getVisibleDeals();
