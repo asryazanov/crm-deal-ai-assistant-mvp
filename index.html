@@ -5019,7 +5019,7 @@ function render() {
 
 // JS: UX render layer, business scoring above remains unchanged
 function getRoleBaseDeals() {
-  if (state.role === "manager" || (state.role === "allDeals" && state.accessRole === "manager")) {
+  if (state.role === "manager") {
     return state.scored.filter((item) => item.deal[FIELD.manager] === state.currentManager);
   }
   return state.scored;
@@ -5596,7 +5596,7 @@ function renderRoleChrome() {
   document.querySelector(".crm-layout").classList.toggle("all-deals-mode", isAllDeals);
   document.getElementById("workspaceTitle").textContent = isAllDeals ? "Все сделки" : isLeader ? "Панель руководителя" : "Рабочее место менеджера";
   document.getElementById("workspaceNote").textContent = isAllDeals
-    ? (state.accessRole === "leader" ? "Реестр всех сделок команды с фильтрами, сортировкой и открытием карточки." : `${state.currentManager}: реестр моих сделок с фильтрами и сортировкой.`)
+    ? "Реестр всех сделок команды с фильтрами, сортировкой и открытием карточки."
     : isLeader
       ? "Командная воронка, критические сделки, управленческие задачи менеджерам."
       : `${state.currentManager}: мои сделки, рекомендации и задачи CRM.`;
@@ -5678,7 +5678,7 @@ function renderFilterPanel() {
     { key: "partner", label: "Партнер", field: FIELD.partner, searchable: true },
     { key: "client", label: "Клиент", field: FIELD.client, searchable: true },
     ...(state.role === "leader" ? [{ key: "manager", label: "Менеджер", field: FIELD.manager, searchable: true }] : []),
-    ...(state.role === "allDeals" && state.accessRole === "leader" ? [{ key: "manager", label: "Менеджер", field: FIELD.manager, searchable: true }] : []),
+    ...(state.role === "allDeals" ? [{ key: "manager", label: "Менеджер", field: FIELD.manager, searchable: true }] : []),
     { key: "amount", label: "Сумма сделки", amount: true },
     ...(state.role === "allDeals" ? [
       { key: "stage", label: "Стадия", field: FIELD.stage, searchable: true },
@@ -5795,7 +5795,7 @@ function switchRole(role) {
   if (role === "manager" || role === "leader") state.accessRole = role;
   state.role = role;
   closeOpenFilter();
-  if (role === "manager" || (role === "allDeals" && state.accessRole === "manager")) state.filters.manager.clear();
+  if (role === "manager") state.filters.manager.clear();
   const visible = getVisibleDeals();
   state.selectedId = visible[0]?.deal[FIELD.id] || null;
   renderFilterPanel();
