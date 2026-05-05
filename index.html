@@ -352,6 +352,19 @@ button { cursor: pointer; }
 .all-deals-back { position: sticky; top: 104px; z-index: 4; display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 16px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255, 255, 255, 0.96); box-shadow: 0 10px 28px rgba(23, 38, 74, 0.12); backdrop-filter: blur(10px); }
 .all-deals-back .secondary-button { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
 .all-deals-back .muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.detail-mode-title { display: grid; gap: 2px; min-width: 0; text-align: right; }
+.detail-mode-title span { color: var(--color-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.detail-mode-title strong { color: var(--color-navy); font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.all-deals-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.all-deals-summary-item { border: 1px solid var(--color-border); border-radius: 12px; padding: 12px 14px; background: var(--color-surface-soft); }
+.all-deals-summary-item span { display: block; color: var(--color-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.all-deals-summary-item strong { display: block; margin-top: 5px; color: var(--color-navy); font-size: 22px; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.active-filter-strip { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; min-height: 30px; }
+.active-filter-strip strong { margin-right: 2px; color: var(--color-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+.active-filter-chip { display: inline-flex; align-items: center; min-height: 28px; border-radius: 999px; padding: 5px 10px; background: #EAF7F6; color: var(--color-primary); font-size: 12px; font-weight: 800; }
+.active-filter-chip.is-empty { background: var(--color-surface-soft); color: var(--color-muted); }
+.table-help { display: flex; justify-content: space-between; gap: 12px; align-items: center; color: var(--color-muted); font-size: 12px; }
+.table-help strong { color: var(--color-primary); }
 .deals-table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: 12px; background: #fff; }
 .deals-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .deals-table th, .deals-table td { padding: 10px 9px; border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: middle; font-size: 12px; line-height: 1.25; }
@@ -360,7 +373,9 @@ button { cursor: pointer; }
 .deals-table td { overflow: hidden; text-overflow: ellipsis; }
 .deals-table tr:last-child td { border-bottom: 0; }
 .deals-table tbody tr { cursor: pointer; transition: background 150ms ease; }
-.deals-table tbody tr:hover, .deals-table tbody tr.is-selected { background: #FAFDFD; }
+.deals-table tbody tr:hover { background: #FAFDFD; }
+.deals-table tbody tr.is-selected { background: #EAF7F6; box-shadow: inset 4px 0 0 var(--color-primary); }
+.deals-table tbody tr.is-selected td { background: #EAF7F6; font-weight: 700; }
 .deals-table .num-cell { text-align: right; white-space: nowrap; }
 .deals-table .tight-cell { width: 64px; text-align: center; }
 .deals-table .id-cell { width: 84px; white-space: nowrap; }
@@ -389,9 +404,13 @@ button { cursor: pointer; }
   .app-header { height: auto; }
   .deal-sidebar, .insight-card { position: static; height: auto; max-height: none; }
   .filter-dropdown-row { flex-wrap: wrap; overflow-x: visible; }
+  .all-deals-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 820px) {
   .deal-hero, .deal-detail-grid, .filter-strip, .score-explain-body { grid-template-columns: 1fr; }
+  .all-deals-summary { grid-template-columns: 1fr; }
+  .all-deals-back { align-items: flex-start; flex-direction: column; top: 12px; }
+  .detail-mode-title { text-align: left; }
   .deals-table-wrap { overflow: auto; }
   .deals-table { min-width: 1120px; }
   .score-donut { justify-self: start; }
@@ -5221,7 +5240,10 @@ function renderAllDealsScreen() {
       <section class="deal-preview">
         <div class="all-deals-back">
           <button class="secondary-button" type="button" id="backToAllDeals">Назад ко всем сделкам</button>
-          <span class="muted">${selected.deal[FIELD.id]} · ${selected.deal[FIELD.client]}</span>
+          <div class="detail-mode-title">
+            <span>Карточка сделки</span>
+            <strong>${selected.deal[FIELD.id]} · ${selected.deal[FIELD.client]}</strong>
+          </div>
         </div>
         ${renderDealPreview(selected)}
       </section>` : ""}
@@ -5256,6 +5278,9 @@ function renderAllDealsTable(visible) {
   return `
     <section class="deals-table-card card">
       <div class="panel-heading"><h2>Все сделки</h2><span>${visible.length} в выборке · клик по строке откроет карточку</span></div>
+      ${renderAllDealsSummary(visible)}
+      ${renderActiveFilterStrip()}
+      <div class="table-help"><span>Клик по строке открывает карточку сделки.</span><span><strong>Подсказка:</strong> ширину колонок можно менять, потянув правый край заголовка.</span></div>
       <div class="deals-table-wrap">
         <table class="deals-table" style="min-width: ${widths.reduce((sum, width) => sum + width, 0)}px">
           <colgroup>
@@ -5270,6 +5295,50 @@ function renderAllDealsTable(visible) {
         </table>
       </div>
     </section>`;
+}
+
+function renderAllDealsSummary(visible) {
+  const red = visible.filter((item) => item.health === "red").length;
+  const critical = visible.reduce((sum, item) => sum + item.risks.filter((risk) => risk.severity === "critical").length, 0);
+  const amount = visible.reduce((sum, item) => sum + number(item.deal[FIELD.amount]), 0);
+  const items = [
+    ["Сделок в выборке", formatNumber.format(visible.length)],
+    ["Сумма сделок", formatRub.format(amount)],
+    ["Красные", formatNumber.format(red)],
+    ["Критические риски", formatNumber.format(critical)]
+  ];
+  return `<div class="all-deals-summary">${items.map(([label, value]) => `
+    <div class="all-deals-summary-item"><span>${label}</span><strong>${value}</strong></div>
+  `).join("")}</div>`;
+}
+
+function renderActiveFilterStrip() {
+  const chips = getActiveFilterChips();
+  return `<div class="active-filter-strip">
+    <strong>Активные фильтры</strong>
+    ${chips.length ? chips.map((chip) => `<span class="active-filter-chip">${chip}</span>`).join("") : `<span class="active-filter-chip is-empty">Не применены</span>`}
+  </div>`;
+}
+
+function getActiveFilterChips() {
+  const chips = [];
+  if (state.search.trim()) chips.push(`Поиск: ${state.search.trim()}`);
+  if (state.health !== "all") chips.push(`Здоровье: ${healthLabel(state.health)}`);
+  const labels = {
+    partner: "Партнер",
+    client: "Клиент",
+    manager: "Менеджер",
+    stage: "Стадия"
+  };
+  Object.entries(labels).forEach(([key, label]) => {
+    state.filters[key].forEach((value) => chips.push(`${label}: ${value}`));
+  });
+  const probabilityLabels = { low: "до 45%", mid: "45-69%", high: "70%+" };
+  const criticalLabels = { none: "0 крит.", one: "1 крит.", many: "2+ крит." };
+  state.filters.amount.forEach((value) => chips.push(`Сумма: ${amountRanges.find((range) => range.id === value)?.label || value}`));
+  state.filters.probability.forEach((value) => chips.push(`Вероятность: ${probabilityLabels[value] || value}`));
+  state.filters.critical.forEach((value) => chips.push(`Крит. риски: ${criticalLabels[value] || value}`));
+  return chips;
 }
 
 function getAllDealsColumns() {
