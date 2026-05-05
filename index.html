@@ -4513,6 +4513,7 @@ const state = {
     partner: new Set(),
     client: new Set(),
     manager: new Set(),
+    status: new Set(),
     amount: new Set(),
     stage: new Set(),
     probability: new Set(),
@@ -5091,6 +5092,7 @@ function getVisibleDeals() {
     if (state.filters.partner.size && !state.filters.partner.has(deal[FIELD.partner])) return false;
     if (state.filters.client.size && !state.filters.client.has(deal[FIELD.client])) return false;
     if (state.filters.manager.size && !state.filters.manager.has(deal[FIELD.manager])) return false;
+    if (state.filters.status.size && !state.filters.status.has(deal[FIELD.result])) return false;
     if (state.filters.amount.size && ![...state.filters.amount].some((range) => amountInRange(number(deal[FIELD.amount]), range))) return false;
     if (state.filters.stage.size && !state.filters.stage.has(deal[FIELD.stage])) return false;
     if (state.filters.probability.size && ![...state.filters.probability].some((range) => probabilityInRange(item.probability, range))) return false;
@@ -5102,6 +5104,7 @@ function getVisibleDeals() {
       deal[FIELD.client],
       deal[FIELD.partner],
       deal[FIELD.manager],
+      deal[FIELD.result],
       deal[FIELD.vendor],
       deal[FIELD.product]
     ].some((value) => String(value || "").toLowerCase().includes(query));
@@ -5328,6 +5331,7 @@ function getActiveFilterChips() {
     partner: "Партнер",
     client: "Клиент",
     manager: "Менеджер",
+    status: "Статус",
     stage: "Стадия"
   };
   Object.entries(labels).forEach(([key, label]) => {
@@ -5889,6 +5893,7 @@ function renderFilterPanel() {
     { key: "client", label: "Клиент", field: FIELD.client, searchable: true },
     ...(state.role === "leader" ? [{ key: "manager", label: "Менеджер", field: FIELD.manager, searchable: true }] : []),
     ...(state.role === "allDeals" ? [{ key: "manager", label: "Менеджер", field: FIELD.manager, searchable: true }] : []),
+    { key: "status", label: "Статус", field: FIELD.result },
     { key: "amount", label: "Сумма сделки", amount: true },
     ...(state.role === "allDeals" ? [
       { key: "stage", label: "Стадия", field: FIELD.stage, searchable: true },
