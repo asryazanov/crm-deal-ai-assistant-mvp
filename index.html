@@ -101,6 +101,13 @@ button { cursor: pointer; }
 .primary-button .spinner { display: none; width: 14px; height: 14px; border-radius: 999px; border: 2px solid rgba(255,255,255,0.45); border-top-color: #fff; animation: spin 0.7s linear infinite; margin-right: 8px; vertical-align: -2px; }
 .primary-button.is-loading .spinner { display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.detail-subheader { position: sticky; top: 76px; z-index: 9; background: rgba(255, 255, 255, 0.96); border-bottom: 1px solid var(--color-border); box-shadow: 0 10px 28px rgba(23, 38, 74, 0.10); backdrop-filter: blur(10px); }
+.detail-subheader[hidden] { display: none; }
+.detail-subheader-inner { width: min(1440px, calc(100% - 48px)); min-height: 56px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.detail-subheader-back { border: 1px solid var(--color-primary); border-radius: 999px; background: var(--color-primary); color: #fff; padding: 9px 14px; font-weight: 800; white-space: nowrap; }
+.detail-subheader-title { min-width: 0; display: grid; justify-items: end; gap: 2px; text-align: right; }
+.detail-subheader-title span { color: var(--color-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.detail-subheader-title strong { max-width: min(720px, 54vw); color: var(--color-navy); font-size: 16px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .page { width: min(1440px, calc(100% - 48px)); margin: 32px auto; display: grid; gap: 20px; }
 .control-card, .card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
 .control-card { padding: 24px; display: grid; gap: 20px; border-top: 4px solid var(--color-primary); }
@@ -301,6 +308,7 @@ button { cursor: pointer; }
 .leader-card.danger { background: var(--color-danger-bg); border-color: rgba(185,28,28,0.18); }
 .leader-card.danger strong { color: var(--color-danger-text); }
 .filter-strip { position: sticky; top: 92px; z-index: 40; display: grid; grid-template-columns: 260px minmax(0, 1fr) max-content; gap: 16px; align-items: center; padding: 14px 16px; border-top: 0; overflow: visible; }
+body.all-deals-detail-open .filter-strip { top: 144px; }
 .filter-strip-meta { display: grid; gap: 3px; min-width: 150px; }
 .filter-strip-meta strong { color: var(--color-navy); }
 .filter-strip-meta span { color: var(--color-muted); font-size: 12px; }
@@ -349,12 +357,6 @@ button { cursor: pointer; }
 .score-explain-body { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin-top: 18px; }
 .score-explain h3 { margin: 0 0 12px; color: var(--color-text); font-size: 16px; }
 .deals-table-card { display: grid; gap: 16px; }
-.all-deals-back { position: sticky; top: 104px; z-index: 4; display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 16px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 14px; background: rgba(255, 255, 255, 0.96); box-shadow: 0 10px 28px rgba(23, 38, 74, 0.12); backdrop-filter: blur(10px); }
-.all-deals-back .secondary-button { border-color: var(--color-primary); background: var(--color-primary); color: #fff; }
-.all-deals-back .muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.detail-mode-title { display: grid; gap: 2px; min-width: 0; text-align: right; }
-.detail-mode-title span { color: var(--color-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
-.detail-mode-title strong { color: var(--color-navy); font-size: 18px; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .all-deals-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .all-deals-summary-item { border: 1px solid var(--color-border); border-radius: 12px; padding: 12px 14px; background: var(--color-surface-soft); }
 .all-deals-summary-item span { display: block; color: var(--color-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
@@ -393,7 +395,7 @@ button { cursor: pointer; }
 .status-pill.green { background: var(--color-success-bg); color: var(--color-success-text); }
 .status-pill.yellow { background: var(--color-warning-bg); color: var(--color-warning-text); }
 .status-pill.red { background: var(--color-danger-bg); color: var(--color-danger-text); }
-.deal-preview, .deals-table-card { scroll-margin-top: 118px; }
+.deal-preview, .deals-table-card { scroll-margin-top: 164px; }
 .deal-preview { margin-top: 18px; }
 .action-card { display: grid; gap: 16px; }
 .action-tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--color-border); }
@@ -402,6 +404,7 @@ button { cursor: pointer; }
   .crm-layout, .deal-detail-layout, .workspace-header, .leader-dashboard { grid-template-columns: 1fr; }
   .header-inner { grid-template-columns: 1fr; height: auto; padding: 14px 0; }
   .app-header { height: auto; }
+  .detail-subheader { top: 0; }
   .deal-sidebar, .insight-card { position: static; height: auto; max-height: none; }
   .filter-dropdown-row { flex-wrap: wrap; overflow-x: visible; }
   .all-deals-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -409,8 +412,9 @@ button { cursor: pointer; }
 @media (max-width: 820px) {
   .deal-hero, .deal-detail-grid, .filter-strip, .score-explain-body { grid-template-columns: 1fr; }
   .all-deals-summary { grid-template-columns: 1fr; }
-  .all-deals-back { align-items: flex-start; flex-direction: column; top: 12px; }
-  .detail-mode-title { text-align: left; }
+  .detail-subheader-inner { width: calc(100% - 32px); align-items: flex-start; flex-direction: column; padding: 10px 0; }
+  .detail-subheader-title { justify-items: start; text-align: left; }
+  .detail-subheader-title strong { max-width: 100%; }
   .deals-table-wrap { overflow: auto; }
   .deals-table { min-width: 1120px; }
   .score-donut { justify-self: start; }
@@ -441,6 +445,15 @@ button { cursor: pointer; }
         <button class="primary-button" id="recalculateButton"><span class="spinner"></span>Пересчитать</button>
       </div>
     </header>
+    <div class="detail-subheader" id="detailSubheader" hidden>
+      <div class="detail-subheader-inner">
+        <button class="detail-subheader-back" type="button" id="detailSubheaderBack">← Все сделки</button>
+        <div class="detail-subheader-title">
+          <span>Карточка сделки</span>
+          <strong id="detailSubheaderTitle">Сделка</strong>
+        </div>
+      </div>
+    </div>
 
     <!-- HTML: Deal workspace -->
     <main class="page crm-layout">
@@ -5232,6 +5245,7 @@ function renderAllDealsScreen() {
   if (!visible.length) {
     document.getElementById("selectedDealName").textContent = "Нет сделок по фильтрам";
     document.getElementById("dealCard").innerHTML = `<section class="card empty-state">Измените фильтры или очистите поиск, чтобы увидеть список сделок.</section>`;
+    renderDetailSubheader(null);
     return;
   }
   if (!visible.some((item) => item.deal[FIELD.id] === state.selectedId)) state.selectedId = visible[0].deal[FIELD.id];
@@ -5241,25 +5255,13 @@ function renderAllDealsScreen() {
     ${renderAllDealsTable(visible)}
     ${state.allDealsDetailOpen ? `
       <section class="deal-preview">
-        <div class="all-deals-back">
-          <button class="secondary-button" type="button" id="backToAllDeals">Назад ко всем сделкам</button>
-          <div class="detail-mode-title">
-            <span>Карточка сделки</span>
-            <strong>${selected.deal[FIELD.id]} · ${selected.deal[FIELD.client]}</strong>
-          </div>
-        </div>
         ${renderDealPreview(selected)}
       </section>` : ""}
   `;
+  renderDetailSubheader(selected);
   wireDealsTable();
   wireColumnResize();
   if (state.allDealsDetailOpen) {
-    document.getElementById("backToAllDeals")?.addEventListener("click", () => {
-      state.allDealsDetailOpen = false;
-      state.scrollToDealDetail = false;
-      state.scrollToAllDealsTable = true;
-      render();
-    });
     wireTabs();
     wireRecommendationButtons();
     wireTaskStatusControls();
@@ -5273,6 +5275,23 @@ function renderAllDealsScreen() {
     state.scrollToAllDealsTable = false;
     requestAnimationFrame(() => document.querySelector(".deals-table-card")?.scrollIntoView({ behavior: "smooth", block: "start" }));
   }
+}
+
+function closeAllDealsDetail() {
+  state.allDealsDetailOpen = false;
+  state.scrollToDealDetail = false;
+  state.scrollToAllDealsTable = true;
+  render();
+}
+
+function renderDetailSubheader(selected) {
+  const subheader = document.getElementById("detailSubheader");
+  const title = document.getElementById("detailSubheaderTitle");
+  const isOpen = state.role === "allDeals" && state.allDealsDetailOpen && selected;
+  document.body.classList.toggle("all-deals-detail-open", Boolean(isOpen));
+  subheader.hidden = !isOpen;
+  if (!isOpen) return;
+  title.textContent = `${selected.deal[FIELD.id]} · ${selected.deal[FIELD.client]}`;
 }
 
 function renderAllDealsTable(visible) {
@@ -5808,6 +5827,7 @@ function renderRoleChrome() {
   const isLeader = state.role === "leader";
   const isAllDeals = state.role === "allDeals";
   document.querySelector(".crm-layout").classList.toggle("all-deals-mode", isAllDeals);
+  if (!isAllDeals || !state.allDealsDetailOpen) renderDetailSubheader(null);
   document.getElementById("workspaceTitle").textContent = isAllDeals ? "Все сделки" : isLeader ? "Панель руководителя" : "Рабочее место менеджера";
   document.getElementById("workspaceNote").textContent = isAllDeals
     ? "Реестр всех сделок команды с фильтрами, сортировкой и открытием карточки."
@@ -6049,6 +6069,7 @@ function init() {
   });
   document.addEventListener("click", handleDocumentClick);
   document.getElementById("clearFiltersButton").addEventListener("click", clearAdvancedFilters);
+  document.getElementById("detailSubheaderBack").addEventListener("click", closeAllDealsDetail);
   document.querySelectorAll("[data-health]").forEach((button) => button.addEventListener("click", () => {
     state.health = button.dataset.health;
     document.querySelectorAll("[data-health]").forEach((chip) => chip.classList.remove("is-active"));
