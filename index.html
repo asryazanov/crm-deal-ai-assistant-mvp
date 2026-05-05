@@ -5349,6 +5349,10 @@ function wireDealsTable() {
 }
 
 function renderSelectedDeal() {
+  if (state.role === "allDeals") {
+    renderAllDealsScreen();
+    return;
+  }
   const visible = getVisibleDeals();
   if (!visible.length) {
     document.getElementById("selectedDealName").textContent = "Нет сделок по фильтрам";
