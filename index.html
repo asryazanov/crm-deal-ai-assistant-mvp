@@ -350,10 +350,11 @@ button { cursor: pointer; }
 .score-explain h3 { margin: 0 0 12px; color: var(--color-text); font-size: 16px; }
 .deals-table-card { display: grid; gap: 16px; }
 .all-deals-back { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-bottom: 16px; }
-.deals-table-wrap { overflow: visible; border: 1px solid var(--color-border); border-radius: 12px; background: #fff; }
+.deals-table-wrap { overflow-x: auto; border: 1px solid var(--color-border); border-radius: 12px; background: #fff; }
 .deals-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 .deals-table th, .deals-table td { padding: 10px 9px; border-bottom: 1px solid var(--color-border); text-align: left; vertical-align: middle; font-size: 12px; line-height: 1.25; }
 .deals-table th { position: sticky; top: 0; z-index: 1; background: var(--color-surface-soft); color: var(--color-muted); font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.deals-table th.resizable-th { position: sticky; }
 .deals-table td { overflow: hidden; text-overflow: ellipsis; }
 .deals-table tr:last-child td { border-bottom: 0; }
 .deals-table tbody tr { cursor: pointer; transition: background 150ms ease; }
@@ -365,8 +366,12 @@ button { cursor: pointer; }
 .deals-table .stage-cell { width: 10%; }
 .deals-table .money-cell { width: 9%; }
 .deals-table .status-cell { width: 8%; }
-.table-sort { border: 0; background: transparent; color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit; padding: 0; }
+.table-sort { border: 0; background: transparent; color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit; padding: 0; text-align: left; }
 .table-sort::after { content: "↕"; margin-left: 5px; color: var(--color-primary); font-size: 10px; }
+.column-resizer { position: absolute; top: 0; right: -4px; z-index: 2; width: 8px; height: 100%; cursor: col-resize; user-select: none; touch-action: none; }
+.column-resizer::after { content: ""; position: absolute; top: 20%; right: 3px; width: 1px; height: 60%; background: transparent; }
+.deals-table th:hover .column-resizer::after { background: var(--color-border-strong); }
+.deals-table.is-resizing, .deals-table.is-resizing * { cursor: col-resize !important; user-select: none; }
 .status-pill { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 8px; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .status-pill.green { background: var(--color-success-bg); color: var(--color-success-text); }
 .status-pill.yellow { background: var(--color-warning-bg); color: var(--color-warning-text); }
@@ -4499,7 +4504,9 @@ const state = {
   },
   openFilter: null,
   tableSort: { key: "default", direction: "desc" },
+  tableColumnWidths: null,
   allDealsDetailOpen: false,
+  scrollToDealDetail: false,
   tasks: [],
   taskDraft: null
 };
@@ -5216,38 +5223,37 @@ function renderAllDealsScreen() {
       </section>` : ""}
   `;
   wireDealsTable();
+  wireColumnResize();
   if (state.allDealsDetailOpen) {
     document.getElementById("backToAllDeals")?.addEventListener("click", () => {
       state.allDealsDetailOpen = false;
+      state.scrollToDealDetail = false;
       render();
     });
     wireTabs();
     wireRecommendationButtons();
     wireTaskStatusControls();
     animateMetrics();
+    if (state.scrollToDealDetail) {
+      state.scrollToDealDetail = false;
+      requestAnimationFrame(() => document.querySelector(".deal-preview")?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
   }
 }
 
 function renderAllDealsTable(visible) {
+  const columns = getAllDealsColumns();
+  const widths = getTableColumnWidths();
   return `
     <section class="deals-table-card card">
       <div class="panel-heading"><h2>Все сделки</h2><span>${visible.length} в выборке · клик по строке откроет карточку</span></div>
       <div class="deals-table-wrap">
-        <table class="deals-table">
+        <table class="deals-table" style="min-width: ${widths.reduce((sum, width) => sum + width, 0)}px">
+          <colgroup>
+            ${columns.map((column, index) => `<col style="width: ${widths[index] || column.width}px">`).join("")}
+          </colgroup>
           <thead><tr>
-            <th class="id-cell">ID</th>
-            <th class="client-cell">Клиент</th>
-            <th>Партнер</th>
-            ${renderSortHeader("manager", "Менеджер")}
-            ${renderSortHeader("stage", "Стадия")}
-            <th>Продукт</th>
-            <th>Вендор</th>
-            ${renderSortHeader("amount", "Сумма")}
-            ${renderSortHeader("probability", "Вероятность")}
-            ${renderSortHeader("health", "Здоровье")}
-            ${renderSortHeader("risks", "Риски")}
-            ${renderSortHeader("critical", "Крит. риски")}
-            ${renderSortHeader("silence", "Ритм")}
+            ${columns.map((column, index) => renderTableHeader(column, index)).join("")}
           </tr></thead>
           <tbody>
             ${visible.map((item) => renderDealsTableRow(item)).join("")}
@@ -5257,9 +5263,40 @@ function renderAllDealsTable(visible) {
     </section>`;
 }
 
+function getAllDealsColumns() {
+  return [
+    { label: "ID", className: "id-cell", width: 76 },
+    { label: "Клиент", className: "client-cell", width: 170 },
+    { label: "Партнер", width: 150 },
+    { label: "Менеджер", key: "manager", width: 145 },
+    { label: "Стадия", key: "stage", className: "stage-cell", width: 130 },
+    { label: "Продукт", width: 140 },
+    { label: "Вендор", width: 130 },
+    { label: "Сумма", key: "amount", className: "money-cell", width: 135 },
+    { label: "Вероятность", key: "probability", width: 116 },
+    { label: "Здоровье", key: "health", className: "status-cell", width: 118 },
+    { label: "Риски", key: "risks", className: "tight-cell", width: 82 },
+    { label: "Крит. риски", key: "critical", className: "tight-cell", width: 92 },
+    { label: "Ритм", key: "silence", className: "tight-cell", width: 80 }
+  ];
+}
+
+function getTableColumnWidths() {
+  const defaults = getAllDealsColumns().map((column) => column.width);
+  if (!Array.isArray(state.tableColumnWidths) || state.tableColumnWidths.length !== defaults.length) {
+    state.tableColumnWidths = [...defaults];
+  }
+  return state.tableColumnWidths;
+}
+
+function renderTableHeader(column, index) {
+  const content = column.key ? renderSortHeader(column.key, column.label) : column.label;
+  return `<th class="resizable-th ${column.className || ""}" data-column-index="${index}">${content}<span class="column-resizer" data-resize-column="${index}" aria-hidden="true"></span></th>`;
+}
+
 function renderSortHeader(key, label) {
   const mark = state.tableSort.key === key ? (state.tableSort.direction === "asc" ? " ↑" : " ↓") : "";
-  return `<th><button class="table-sort" data-sort-key="${key}">${label}${mark}</button></th>`;
+  return `<button class="table-sort" data-sort-key="${key}">${label}${mark}</button>`;
 }
 
 function renderDealsTableRow(item) {
@@ -5330,12 +5367,14 @@ function renderDealPreview(selected) {
 }
 
 function wireDealsTable() {
-  document.querySelectorAll("[data-deal-id]").forEach((row) => {
-    row.addEventListener("click", () => {
+  document.querySelector(".deals-table tbody")?.addEventListener("click", (event) => {
+    const row = event.target.closest("[data-deal-id]");
+    if (row) {
       state.selectedId = row.dataset.dealId;
       state.allDealsDetailOpen = true;
+      state.scrollToDealDetail = true;
       render();
-    });
+    }
   });
   document.querySelectorAll("[data-sort-key]").forEach((button) => {
     button.addEventListener("click", (event) => {
@@ -5344,6 +5383,37 @@ function wireDealsTable() {
       state.tableSort.direction = state.tableSort.key === key && state.tableSort.direction === "desc" ? "asc" : "desc";
       state.tableSort.key = key;
       render();
+    });
+  });
+}
+
+function wireColumnResize() {
+  document.querySelectorAll("[data-resize-column]").forEach((handle) => {
+    handle.addEventListener("click", (event) => event.stopPropagation());
+    handle.addEventListener("mousedown", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const table = handle.closest(".deals-table");
+      const index = Number(handle.dataset.resizeColumn);
+      const widths = getTableColumnWidths();
+      const startX = event.clientX;
+      const startWidth = widths[index] || getAllDealsColumns()[index].width;
+      table?.classList.add("is-resizing");
+
+      const onMove = (moveEvent) => {
+        widths[index] = Math.max(64, Math.round(startWidth + moveEvent.clientX - startX));
+        state.tableColumnWidths = widths;
+        const column = table?.querySelectorAll("col")[index];
+        if (column) column.style.width = `${widths[index]}px`;
+        if (table) table.style.minWidth = `${widths.reduce((sum, width) => sum + width, 0)}px`;
+      };
+      const onUp = () => {
+        table?.classList.remove("is-resizing");
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      };
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
     });
   });
 }
@@ -5857,6 +5927,7 @@ function switchRole(role) {
   if (role === "manager" || role === "leader") state.accessRole = role;
   state.role = role;
   state.allDealsDetailOpen = false;
+  state.scrollToDealDetail = false;
   closeOpenFilter();
   if (role === "manager") state.filters.manager.clear();
   const visible = getVisibleDeals();
