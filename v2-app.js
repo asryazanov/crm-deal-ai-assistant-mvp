@@ -14,6 +14,7 @@
       amount: "all",
       health: "all"
     },
+    focusZone: "all",
     selectedDealId: null,
     tasks: loadTasks()
   };
@@ -72,6 +73,10 @@
   }
 
   function filteredDeals() {
+    return baseFilteredDeals().filter((deal) => state.focusZone === "all" || focusMatch(deal, state.focusZone));
+  }
+
+  function baseFilteredDeals() {
     return data.deals.filter((deal) => {
       if (state.filters.region !== "all" && deal.region !== state.filters.region) return false;
       if (state.filters.partner !== "all" && deal.partner !== state.filters.partner) return false;
@@ -85,6 +90,15 @@
       }
       return true;
     });
+  }
+
+  function focusMatch(deal, zone) {
+    return {
+      transfers: deal.transferCount >= 3,
+      noShipment: deal.status !== "Проиграна" && !deal.shipmentAmount,
+      burnout: deal.burnoutRisk === "Высокий" || deal.cpExpired || deal.lastActivityDays > 21,
+      lowConfidence: forecastConfidence(deal) < 45
+    }[zone] || true;
   }
 
   function amountMatch(value, bucket) {
@@ -182,11 +196,12 @@
 
   function render() {
     const root = appRoot();
+    const baseDeals = baseFilteredDeals();
     const deals = filteredDeals();
     root.innerHTML = `
       <section class="v2-shell">
         ${renderTopbar(deals)}
-        ${state.selectedDealId ? renderDealDetail(deals) : renderRoleScreen(deals)}
+        ${state.selectedDealId ? renderDealDetail(deals) : renderRoleScreen(deals, baseDeals)}
       </section>
     `;
     wireEvents();
@@ -216,8 +231,20 @@
           ${selectField("amount", "Сумма", [["all", "Все"], ["lt5", "до 5 млн"], ["m5to10", "5-10 млн"], ["m10to50", "10-50 млн"], ["gte50", "от 50 млн"]])}
           ${selectField("health", "Здоровье", [["all", "Все"], ["green", "Здоровые"], ["yellow", "Жёлтые"], ["red", "Красные"]])}
         </div>
+        ${renderFocusStatus()}
       </section>
     `;
+  }
+
+  function renderFocusStatus() {
+    if (state.focusZone === "all") return "";
+    const labels = {
+      transfers: "3+ переноса",
+      noShipment: "нет отгрузки в 1С",
+      burnout: "выгорание",
+      lowConfidence: "низкое доверие"
+    };
+    return `<div class="v2-focus-status"><span>Фокус: ${labels[state.focusZone]}</span><button data-focus-zone="all">Снять фокус</button></div>`;
   }
 
   function employeeOptions() {
@@ -238,10 +265,12 @@
     `;
   }
 
-  function renderRoleScreen(deals) {
+  function renderRoleScreen(deals, baseDeals = deals) {
     if (state.role === "allDeals") return renderAllDeals(deals);
     return `
       ${renderKpis(deals)}
+      ${renderProblemZones(baseDeals)}
+      ${renderForecastVisual(deals)}
       ${renderTodayActions(deals)}
       <section class="v2-dashboard">
         <div class="v2-panel">
@@ -256,12 +285,12 @@
       </section>
       <section class="v2-two-col">
         <div class="v2-panel">
-          <div class="v2-panel-head"><h2>Проблемные зоны</h2><span>переносы · выгорание</span></div>
-          ${renderProblemZones(deals)}
-        </div>
-        <div class="v2-panel">
           <div class="v2-panel-head"><h2>Демо-задачи</h2><span>${state.tasks.length}</span></div>
           ${renderTasks()}
+        </div>
+        <div class="v2-panel">
+          <div class="v2-panel-head"><h2>Сигналы качества</h2><span>AI-контроль</span></div>
+          ${renderQualitySignals(deals)}
         </div>
       </section>
     `;
@@ -312,6 +341,35 @@
         </div>
       </section>
     `;
+  }
+
+  function renderForecastVisual(deals) {
+    const plan = planForCurrentRole();
+    const fact = factAmount(deals);
+    const ai = forecastAmount(deals);
+    const human = humanForecastAmount(deals);
+    const max = Math.max(plan, fact, ai, human, 1);
+    return `
+      <section class="v2-forecast-board">
+        <div class="v2-panel-head">
+          <h2>План-факт и доверие к прогнозу</h2>
+          <span>AI vs прогноз роли</span>
+        </div>
+        ${forecastBar("План из 1С", plan, max, "plan")}
+        ${forecastBar("Факт", fact, max, "fact")}
+        ${forecastBar("Прогноз AI", ai, max, "ai")}
+        ${forecastBar("Прогноз роли", human, max, "human")}
+      </section>
+    `;
+  }
+
+  function forecastBar(label, value, max, type) {
+    const width = Math.max(4, Math.round(value / max * 100));
+    return `<div class="v2-forecast-row">
+      <span>${label}</span>
+      <div class="v2-forecast-track"><em class="${type}" style="width:${width}%"></em></div>
+      <strong>${money.format(value)}</strong>
+    </div>`;
   }
 
   function buildTodayActions(deals) {
@@ -486,14 +544,35 @@
 
   function renderProblemZones(deals) {
     const transfers = deals.filter((deal) => deal.transferCount >= 3).length;
-    const noPartnerShip = groupBy(deals, (deal) => deal.partner).filter((group) => group.rows.length >= 2 && sum(group.rows, (deal) => deal.shipmentAmount) === 0).length;
-    const noVendorShip = groupBy(deals, (deal) => deal.vendor).filter((group) => group.rows.length >= 2 && sum(group.rows, (deal) => deal.shipmentAmount) === 0).length;
+    const noShipment = deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length;
+    const lowConfidence = deals.filter((deal) => forecastConfidence(deal) < 45).length;
     const burned = deals.filter((deal) => deal.burnoutRisk === "Высокий").length;
-    return `<div class="v2-grid">
-      ${kpi("3+ переноса", transfers, "сделки требуют переквалификации", transfers ? "is-danger" : "")}
-      ${kpi("Партнёры без отгрузок", noPartnerShip, "есть ВС, нет факта в 1С", noPartnerShip ? "is-danger" : "")}
-      ${kpi("Вендоры без отгрузок", noVendorShip, "pipeline есть, факта нет", noVendorShip ? "is-danger" : "")}
-      ${kpi("Высокое выгорание", burned, "нет активности / истёк КП", burned ? "is-danger" : "")}
+    const zones = [
+      { key: "transfers", label: "3+ переноса", value: transfers, note: "сделки требуют переквалификации", level: transfers ? "red" : "green" },
+      { key: "noShipment", label: "Нет отгрузки в 1С", value: noShipment, note: "есть ВС, нет факта или факт давно", level: noShipment ? "red" : "green" },
+      { key: "burnout", label: "Высокое выгорание", value: burned, note: "нет активности / истёк КП", level: burned ? "red" : "green" },
+      { key: "lowConfidence", label: "Низкое доверие", value: lowConfidence, note: "прогноз требует проверки", level: lowConfidence ? "yellow" : "green" }
+    ];
+    return `<section class="v2-zone-board">
+      <div class="v2-panel-head"><h2>Проблемные зоны</h2><span>кликните, чтобы сфокусировать дашборд</span></div>
+      <div class="v2-zone-grid">
+        ${zones.map((zone) => `<button class="v2-zone-card ${zone.level} ${state.focusZone === zone.key ? "is-active" : ""}" data-focus-zone="${zone.key}">
+          <span>${zone.label}</span>
+          <strong>${zone.value}</strong>
+          <small>${zone.note}</small>
+        </button>`).join("")}
+      </div>
+    </section>`;
+  }
+
+  function renderQualitySignals(deals) {
+    const stale = deals.filter((deal) => deal.lastActivityDays > 21).length;
+    const expiredCp = deals.filter((deal) => deal.cpExpired).length;
+    const overForecast = deals.filter((deal) => deal.managerForecast - deal.aiForecast > deal.amount * 0.22).length;
+    return `<div class="v2-list">
+      <div class="v2-list-item"><span><strong>${stale} сделок без активности 21+ день</strong><span>AI снижает доверие и рекомендует обновить статус.</span></span>${badge(stale ? "контроль" : "норма", stale ? "red" : "green")}</div>
+      <div class="v2-list-item"><span><strong>${expiredCp} сделок с истёкшим КП</strong><span>Нужно подтвердить актуальность условий и сроков.</span></span>${badge(expiredCp ? "риск" : "норма", expiredCp ? "red" : "green")}</div>
+      <div class="v2-list-item"><span><strong>${overForecast} завышенных прогнозов роли</strong><span>Расхождение с AI больше 22% от суммы сделки.</span></span>${badge(overForecast ? "проверить" : "норма", overForecast ? "yellow" : "green")}</div>
     </div>`;
   }
 
@@ -501,6 +580,8 @@
     const rows = [...deals].sort((a, b) => riskRank(b) - riskRank(a));
     return `
       ${renderKpis(deals)}
+      ${renderProblemZones(baseFilteredDeals())}
+      ${renderForecastVisual(deals)}
       ${renderTodayActions(deals)}
       <section class="v2-table-card">
         <div class="v2-panel-head"><h2>Все возможные сделки</h2><span>${rows.length} в выборке · клик открывает карточку</span></div>
@@ -627,6 +708,7 @@
       button.addEventListener("click", () => {
         state.role = button.dataset.v2Role;
         state.selectedDealId = null;
+        state.focusZone = "all";
         state.filters.employee = "all";
         render();
       });
@@ -634,6 +716,15 @@
     document.querySelectorAll("[data-filter]").forEach((input) => {
       input.addEventListener("change", () => {
         state.filters[input.dataset.filter] = input.value;
+        state.selectedDealId = null;
+        state.focusZone = "all";
+        render();
+      });
+    });
+    document.querySelectorAll("[data-focus-zone]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const zone = button.dataset.focusZone;
+        state.focusZone = state.focusZone === zone ? "all" : zone;
         state.selectedDealId = null;
         render();
       });
