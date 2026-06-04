@@ -16,6 +16,7 @@
     },
     focusZone: "all",
     monthFocus: "all",
+    stageFocus: "all",
     selectedObject: null,
     selectedDealId: null,
     tasks: loadTasks()
@@ -63,6 +64,12 @@
   const money = new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 });
   const number = new Intl.NumberFormat("ru-RU");
 
+  function compactMoney(value) {
+    if (Math.abs(value) >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(value >= 10_000_000_000 ? 0 : 1)} млрд ₽`;
+    if (Math.abs(value) >= 1_000_000) return `${Math.round(value / 1_000_000)} млн ₽`;
+    return money.format(value);
+  }
+
   function appRoot() {
     let root = document.getElementById("v2RoleDashboards");
     if (!root) {
@@ -78,6 +85,7 @@
     return baseFilteredDeals().filter((deal) => {
       if (state.focusZone !== "all" && !focusMatch(deal, state.focusZone)) return false;
       if (state.monthFocus !== "all" && deal.plannedMonth !== state.monthFocus) return false;
+      if (state.stageFocus !== "all" && deal.stage !== state.stageFocus) return false;
       return true;
     });
   }
@@ -258,7 +266,7 @@
   }
 
   function renderFocusStatus() {
-    if (state.focusZone === "all" && state.monthFocus === "all") return "";
+    if (state.focusZone === "all" && state.monthFocus === "all" && state.stageFocus === "all") return "";
     const labels = {
       transfers: "3+ переноса",
       noShipment: "нет отгрузки в 1С",
@@ -268,6 +276,7 @@
     const parts = [];
     if (state.focusZone !== "all") parts.push(labels[state.focusZone]);
     if (state.monthFocus !== "all") parts.push(`месяц ${state.monthFocus.slice(5)}`);
+    if (state.stageFocus !== "all") parts.push(`стадия: ${state.stageFocus}`);
     return `<div class="v2-focus-status"><span>Фокус: ${parts.join(" · ")}</span><button data-clear-focus>Снять фокус</button></div>`;
   }
 
@@ -294,9 +303,8 @@
     if (state.role === "allDeals") return renderAllDeals(deals);
     return `
       ${renderKpis(deals)}
-      ${renderProblemZones(baseDeals)}
-      ${renderForecastVisual(deals)}
-      ${renderTrend(baseDeals)}
+      ${renderSalesCommandCenter(deals, baseDeals)}
+      ${renderProblemHeatmap(baseDeals)}
       ${renderTodayActions(deals)}
       <section class="v2-dashboard">
         <div class="v2-panel">
@@ -326,26 +334,24 @@
     const plan = planForCurrentRole();
     const fact = factAmount(deals);
     const forecast = forecastAmount(deals);
-    const humanForecast = humanForecastAmount(deals);
     const confidence = dashboardConfidence(deals);
     const confidenceMeta = confidenceLevel(confidence);
     const gap = Math.max(0, plan - forecast);
     const red = deals.filter((deal) => deal.health === "red").length;
-    const transferAmount = sum(deals.filter((deal) => deal.transferCount > 0), (deal) => deal.amount);
+    const openPipeline = sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.amount);
     return `
       <section class="v2-grid">
-        ${kpi("План из 1С", money.format(plan), `${periodLabel()} · выбранная роль`)}
-        ${kpi("Факт", money.format(fact), `${Math.round((fact / Math.max(plan, 1)) * 100)}% выполнения`)}
-        ${kpi("Прогноз AI", money.format(forecast), `разрыв ${money.format(gap)}`)}
-        ${kpi("Прогноз роли", money.format(humanForecast), `расхождение с AI ${money.format(humanForecast - forecast)}`, humanForecast - forecast > plan * 0.12 ? "is-warning" : "")}
+        ${kpi("План из 1С", compactMoney(plan), `${periodLabel()} · выбранная роль`, "", money.format(plan))}
+        ${kpi("Факт", compactMoney(fact), `${Math.round((fact / Math.max(plan, 1)) * 100)}% выполнения`, "", money.format(fact))}
+        ${kpi("Прогноз AI", compactMoney(forecast), `разрыв ${compactMoney(gap)}`, "", money.format(forecast))}
         ${kpi("Доверие к прогнозу", `${confidence}%`, confidenceMeta.label, confidenceMeta.color === "red" ? "is-danger" : confidenceMeta.color === "yellow" ? "is-warning" : "")}
-        ${kpi("Красные / переносы", `${red} / ${deals.filter((deal) => deal.transferCount > 0).length}`, `перенесено ${money.format(transferAmount)}`, red ? "is-danger" : "")}
+        ${kpi("Pipeline в работе", compactMoney(openPipeline), `${red} красных ВС`, red ? "is-danger" : "", money.format(openPipeline))}
       </section>
     `;
   }
 
-  function kpi(label, value, note, mod = "") {
-    return `<article class="v2-card ${mod}"><span>${label}</span><strong>${value}</strong><small>${note}</small></article>`;
+  function kpi(label, value, note, mod = "", title = "") {
+    return `<article class="v2-card ${mod}"><span>${label}</span><strong ${title ? `title="${title}"` : ""}>${value}</strong><small>${note}</small></article>`;
   }
 
   function renderTodayActions(deals) {
@@ -372,24 +378,82 @@
     `;
   }
 
-  function renderForecastVisual(deals) {
+  function renderSalesCommandCenter(deals, baseDeals) {
+    return `<section class="v2-command-grid">
+      ${renderForecastBridge(deals)}
+      ${renderPipelineByStage(baseDeals)}
+    </section>`;
+  }
+
+  function renderForecastBridge(deals) {
     const plan = planForCurrentRole();
     const fact = factAmount(deals);
     const ai = forecastAmount(deals);
-    const human = humanForecastAmount(deals);
-    const max = Math.max(plan, fact, ai, human, 1);
+    const gap = Math.max(0, plan - ai);
+    const openForecast = Math.max(0, ai - fact);
+    const max = Math.max(plan, fact, ai, 1);
     return `
-      <section class="v2-forecast-board">
+      <section class="v2-forecast-board v2-bridge-board">
         <div class="v2-panel-head">
-          <h2>План-факт и доверие к прогнозу</h2>
-          <span>AI vs прогноз роли</span>
+          <h2>Forecast bridge</h2>
+          <span>план → факт → AI → разрыв</span>
         </div>
-        ${forecastBar("План из 1С", plan, max, "plan")}
-        ${forecastBar("Факт", fact, max, "fact")}
-        ${forecastBar("Прогноз AI", ai, max, "ai")}
-        ${forecastBar("Прогноз роли", human, max, "human")}
+        <div class="v2-bridge-line">
+          ${bridgeStep("План", plan, max, "plan")}
+          ${bridgeStep("Факт", fact, max, "fact")}
+          ${bridgeStep("+ AI pipeline", openForecast, max, "ai")}
+          ${bridgeStep("Разрыв", gap, max, gap ? "gap" : "fact")}
+        </div>
+        <div class="v2-insight">${mainInsight(deals)}</div>
       </section>
     `;
+  }
+
+  function bridgeStep(label, value, max, type) {
+    return `<div class="v2-bridge-step ${type}">
+      <span>${label}</span>
+      <strong title="${money.format(value)}">${compactMoney(value)}</strong>
+      <i style="height:${Math.max(18, Math.round(value / max * 118))}px"></i>
+    </div>`;
+  }
+
+  function renderPipelineByStage(deals) {
+    const openDeals = deals.filter((deal) => deal.status === "В работе");
+    const stageOrder = ["Квалификация", "Интерес / Намерение", "Подготовка сделки / Presale", "Переговоры", "Коммерческое предложение", "Закрытие"];
+    const rows = stageOrder
+      .map((stage) => {
+        const stageDeals = openDeals.filter((deal) => deal.stage === stage);
+        const green = sum(stageDeals.filter((deal) => deal.health === "green"), (deal) => deal.amount);
+        const yellow = sum(stageDeals.filter((deal) => deal.health === "yellow"), (deal) => deal.amount);
+        const red = sum(stageDeals.filter((deal) => deal.health === "red"), (deal) => deal.amount);
+        return { stage, green, yellow, red, total: green + yellow + red, count: stageDeals.length };
+      })
+      .filter((row) => row.total > 0)
+      .sort((a, b) => b.total - a.total);
+    const max = Math.max(1, ...rows.map((row) => row.total));
+    return `<section class="v2-pipeline-board">
+      <div class="v2-panel-head">
+        <h2>Pipeline по стадиям</h2>
+        <span>сумма и качество ВС</span>
+      </div>
+      <div class="v2-pipeline-list">
+        ${rows.map((row) => {
+          const greenWidth = Math.round(row.green / row.total * 100);
+          const yellowWidth = Math.round(row.yellow / row.total * 100);
+          const redWidth = Math.round(row.red / row.total * 100);
+          return `<button class="v2-pipeline-row ${state.stageFocus === row.stage ? "is-active" : ""}" data-stage-pick="${row.stage}">
+            <span>${row.stage}<small>${row.count} ВС</small></span>
+            <div class="v2-pipeline-track" style="max-width:${Math.max(24, Math.round(row.total / max * 100))}%">
+              <i class="green" style="width:${greenWidth}%"></i>
+              <i class="yellow" style="width:${yellowWidth}%"></i>
+              <i class="red" style="width:${redWidth}%"></i>
+            </div>
+            <strong title="${money.format(row.total)}">${compactMoney(row.total)}</strong>
+          </button>`;
+        }).join("") || `<div class="v2-empty">Нет открытого pipeline в выборке.</div>`}
+      </div>
+      <div class="v2-legend"><span class="green">Здоровые</span><span class="yellow">Внимание</span><span class="red">Критичные</span></div>
+    </section>`;
   }
 
   function renderTrend(deals) {
@@ -408,7 +472,7 @@
           return `<button class="v2-trend-bar ${state.monthFocus === month ? "is-active" : ""}" data-trend-month="${month}" title="${month}: ${money.format(value)}">
             <span>${month.slice(5)}</span>
             <i style="height:${Math.max(12, Math.round(value / max * 110))}px"></i>
-            <strong>${money.format(value)}</strong>
+            <strong title="${money.format(value)}">${compactMoney(value)}</strong>
             <small>${risk} риск.</small>
           </button>`;
         }).join("")}
@@ -622,6 +686,56 @@
     </section>`;
   }
 
+  function renderProblemHeatmap(deals) {
+    const dimension = heatmapDimension();
+    const rows = groupBy(deals, (deal) => deal[dimension.field])
+      .map(({key, rows}) => ({
+        key,
+        rows,
+        amount: sum(rows, (deal) => deal.amount),
+        transfers: rows.filter((deal) => deal.transferCount >= 3).length,
+        noShipment: rows.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length,
+        burnout: rows.filter((deal) => deal.burnoutRisk === "Высокий" || deal.cpExpired || deal.lastActivityDays > 21).length,
+        lowConfidence: rows.filter((deal) => forecastConfidence(deal) < 45).length
+      }))
+      .sort((a, b) => b.burnout + b.transfers + b.noShipment + b.lowConfidence - (a.burnout + a.transfers + a.noShipment + a.lowConfidence) || b.amount - a.amount)
+      .slice(0, 8);
+    const columns = [
+      ["transfers", "3+ переноса"],
+      ["noShipment", "Нет 1С"],
+      ["burnout", "Выгорание"],
+      ["lowConfidence", "Низк. доверие"]
+    ];
+    return `<section class="v2-heatmap-board">
+      <div class="v2-panel-head">
+        <h2>Проблемные зоны</h2>
+        <span>${dimension.label} × риск · клик фильтрует выборку</span>
+      </div>
+      <div class="v2-heatmap">
+        <div class="v2-heatmap-head"><span>${dimension.label}</span>${columns.map(([, label]) => `<span>${label}</span>`).join("")}<span>Pipeline</span></div>
+        ${rows.map((row) => `<div class="v2-heatmap-row">
+          <button class="v2-heatmap-name" ${dimension.objectType ? `data-open-object="${dimension.objectType}" data-object-name="${encodeURIComponent(row.key)}"` : `data-heatmap-filter="${dimension.filter}" data-heatmap-value="${encodeURIComponent(row.key)}"`}>
+            ${row.key}<small>${row.rows.length} ВС</small>
+          </button>
+          ${columns.map(([key]) => heatmapCell(row[key], key, dimension, row.key)).join("")}
+          <strong title="${money.format(row.amount)}">${compactMoney(row.amount)}</strong>
+        </div>`).join("") || `<div class="v2-empty">Нет данных для heatmap.</div>`}
+      </div>
+    </section>`;
+  }
+
+  function heatmapDimension() {
+    if (state.role === "pam") return { label: "Партнёр", field: "partner", filter: "partner", objectType: "partner" };
+    if (state.role === "sdm") return { label: "Вендор", field: "vendor", filter: "vendor", objectType: "vendor" };
+    if (state.role === "sdmLead") return { label: "SDM", field: "sdm", filter: "employee" };
+    return { label: "Менеджер", field: "sale", filter: "employee" };
+  }
+
+  function heatmapCell(value, zone, dimension, key) {
+    const level = value >= 6 ? "high" : value >= 3 ? "mid" : value > 0 ? "low" : "zero";
+    return `<button class="v2-heatmap-cell ${level} ${state.focusZone === zone ? "is-active" : ""}" data-focus-zone="${zone}" data-heatmap-filter="${dimension.filter}" data-heatmap-value="${encodeURIComponent(key)}">${value}</button>`;
+  }
+
   function renderQualitySignals(deals) {
     const stale = deals.filter((deal) => deal.lastActivityDays > 21).length;
     const expiredCp = deals.filter((deal) => deal.cpExpired).length;
@@ -637,8 +751,8 @@
     const rows = [...deals].sort((a, b) => riskRank(b) - riskRank(a));
     return `
       ${renderKpis(deals)}
-      ${renderProblemZones(baseFilteredDeals())}
-      ${renderForecastVisual(deals)}
+      ${renderSalesCommandCenter(deals, baseFilteredDeals())}
+      ${renderProblemHeatmap(baseFilteredDeals())}
       ${renderTrend(baseFilteredDeals())}
       ${renderTodayActions(deals)}
       <section class="v2-table-card">
@@ -839,6 +953,7 @@
         state.selectedObject = null;
         state.focusZone = "all";
         state.monthFocus = "all";
+        state.stageFocus = "all";
         state.filters.employee = "all";
         render();
       });
@@ -850,6 +965,7 @@
         state.selectedObject = null;
         state.focusZone = "all";
         state.monthFocus = "all";
+        state.stageFocus = "all";
         render();
       });
     });
@@ -857,6 +973,7 @@
       button.addEventListener("click", () => {
         state.focusZone = state.focusZone === button.dataset.preset ? "all" : button.dataset.preset;
         state.monthFocus = "all";
+        state.stageFocus = "all";
         state.selectedDealId = null;
         state.selectedObject = null;
         render();
@@ -866,6 +983,7 @@
       state.filters = { period: "month", region: "all", employee: "all", partner: "all", vendor: "all", status: "all", amount: "all", health: "all" };
       state.focusZone = "all";
       state.monthFocus = "all";
+      state.stageFocus = "all";
       state.selectedDealId = null;
       state.selectedObject = null;
       render();
@@ -874,7 +992,11 @@
       button.addEventListener("click", () => {
         const zone = button.dataset.focusZone;
         state.focusZone = state.focusZone === zone ? "all" : zone;
+        if (button.dataset.heatmapFilter) {
+          state.filters[button.dataset.heatmapFilter] = decodeURIComponent(button.dataset.heatmapValue);
+        }
         state.monthFocus = "all";
+        state.stageFocus = "all";
         state.selectedDealId = null;
         state.selectedObject = null;
         render();
@@ -898,6 +1020,16 @@
         state.selectedDealId = null;
         state.selectedObject = null;
         state.monthFocus = "all";
+        state.stageFocus = "all";
+        render();
+      });
+    });
+    document.querySelectorAll("[data-heatmap-filter]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.focusZone) return;
+        state.filters[button.dataset.heatmapFilter] = decodeURIComponent(button.dataset.heatmapValue);
+        state.selectedDealId = null;
+        state.selectedObject = null;
         render();
       });
     });
@@ -917,6 +1049,7 @@
     document.querySelector("[data-clear-focus]")?.addEventListener("click", () => {
       state.focusZone = "all";
       state.monthFocus = "all";
+      state.stageFocus = "all";
       state.selectedObject = null;
       state.selectedDealId = null;
       render();
@@ -926,6 +1059,14 @@
         state.selectedObject = null;
         state.selectedDealId = null;
         state.monthFocus = state.monthFocus === button.dataset.trendMonth ? "all" : button.dataset.trendMonth;
+        render();
+      });
+    });
+    document.querySelectorAll("[data-stage-pick]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.selectedObject = null;
+        state.selectedDealId = null;
+        state.stageFocus = state.stageFocus === button.dataset.stagePick ? "all" : button.dataset.stagePick;
         render();
       });
     });
