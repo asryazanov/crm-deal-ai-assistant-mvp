@@ -15,6 +15,8 @@
       health: "all"
     },
     focusZone: "all",
+    monthFocus: "all",
+    selectedObject: null,
     selectedDealId: null,
     tasks: loadTasks()
   };
@@ -73,7 +75,11 @@
   }
 
   function filteredDeals() {
-    return baseFilteredDeals().filter((deal) => state.focusZone === "all" || focusMatch(deal, state.focusZone));
+    return baseFilteredDeals().filter((deal) => {
+      if (state.focusZone !== "all" && !focusMatch(deal, state.focusZone)) return false;
+      if (state.monthFocus !== "all" && deal.plannedMonth !== state.monthFocus) return false;
+      return true;
+    });
   }
 
   function baseFilteredDeals() {
@@ -231,20 +237,38 @@
           ${selectField("amount", "Сумма", [["all", "Все"], ["lt5", "до 5 млн"], ["m5to10", "5-10 млн"], ["m10to50", "10-50 млн"], ["gte50", "от 50 млн"]])}
           ${selectField("health", "Здоровье", [["all", "Все"], ["green", "Здоровые"], ["yellow", "Жёлтые"], ["red", "Красные"]])}
         </div>
+        ${renderPresetRow()}
         ${renderFocusStatus()}
       </section>
     `;
   }
 
+  function renderPresetRow() {
+    const presets = [
+      ["burnout", "Выгорание"],
+      ["transfers", "3+ переноса"],
+      ["noShipment", "Нет отгрузок"],
+      ["lowConfidence", "Низкое доверие"]
+    ];
+    return `<div class="v2-preset-row">
+      <span>Быстрые сценарии</span>
+      ${presets.map(([key, label]) => `<button class="${state.focusZone === key ? "is-active" : ""}" data-preset="${key}">${label}</button>`).join("")}
+      <button data-reset-v2>Сбросить всё</button>
+    </div>`;
+  }
+
   function renderFocusStatus() {
-    if (state.focusZone === "all") return "";
+    if (state.focusZone === "all" && state.monthFocus === "all") return "";
     const labels = {
       transfers: "3+ переноса",
       noShipment: "нет отгрузки в 1С",
       burnout: "выгорание",
       lowConfidence: "низкое доверие"
     };
-    return `<div class="v2-focus-status"><span>Фокус: ${labels[state.focusZone]}</span><button data-focus-zone="all">Снять фокус</button></div>`;
+    const parts = [];
+    if (state.focusZone !== "all") parts.push(labels[state.focusZone]);
+    if (state.monthFocus !== "all") parts.push(`месяц ${state.monthFocus.slice(5)}`);
+    return `<div class="v2-focus-status"><span>Фокус: ${parts.join(" · ")}</span><button data-clear-focus>Снять фокус</button></div>`;
   }
 
   function employeeOptions() {
@@ -266,11 +290,13 @@
   }
 
   function renderRoleScreen(deals, baseDeals = deals) {
+    if (state.selectedObject) return renderObjectDetail(baseDeals, state.selectedObject);
     if (state.role === "allDeals") return renderAllDeals(deals);
     return `
       ${renderKpis(deals)}
       ${renderProblemZones(baseDeals)}
       ${renderForecastVisual(deals)}
+      ${renderTrend(baseDeals)}
       ${renderTodayActions(deals)}
       <section class="v2-dashboard">
         <div class="v2-panel">
@@ -328,11 +354,14 @@
       <section class="v2-action-board">
         <div class="v2-panel-head">
           <h2>AI: что сделать сегодня</h2>
-          <span>${actions.length} приоритетных действий</span>
+          <div class="v2-head-actions">
+            <span>${actions.length} приоритетных действий</span>
+            <button class="v2-mini-button" data-create-bulk-tasks>Создать задачи</button>
+          </div>
         </div>
         <div class="v2-action-list">
           ${actions.map((action, index) => `
-            <button class="v2-action-item ${action.level}" ${action.dealId ? `data-open-deal="${action.dealId}"` : ""} ${action.filterKey ? `data-quick-filter="${action.filterKey}" data-quick-value="${action.filterValue}"` : ""}>
+            <button class="v2-action-item ${action.level}" ${action.dealId ? `data-open-deal="${action.dealId}"` : ""} ${action.filterKey ? `data-quick-filter="${action.filterKey}" data-quick-value="${action.filterValue}"` : ""} ${action.objectType ? `data-open-object="${action.objectType}" data-object-name="${encodeURIComponent(action.objectName)}"` : ""}>
               <em>${index + 1}</em>
               <span><strong>${action.title}</strong><small>${action.note}</small></span>
               <b>${action.badge}</b>
@@ -361,6 +390,30 @@
         ${forecastBar("Прогноз роли", human, max, "human")}
       </section>
     `;
+  }
+
+  function renderTrend(deals) {
+    const months = [...new Set(data.deals.map((deal) => deal.plannedMonth))].sort().slice(-6);
+    const max = Math.max(1, ...months.map((month) => sum(deals.filter((deal) => deal.plannedMonth === month), (deal) => deal.amount)));
+    return `<section class="v2-trend-board">
+      <div class="v2-panel-head">
+        <h2>Динамика pipeline</h2>
+        <span>по плановому месяцу закрытия</span>
+      </div>
+      <div class="v2-trend-bars">
+        ${months.map((month) => {
+          const rows = deals.filter((deal) => deal.plannedMonth === month);
+          const value = sum(rows, (deal) => deal.amount);
+          const risk = rows.filter((deal) => deal.health === "red" || deal.burnoutRisk === "Высокий").length;
+          return `<button class="v2-trend-bar ${state.monthFocus === month ? "is-active" : ""}" data-trend-month="${month}" title="${month}: ${money.format(value)}">
+            <span>${month.slice(5)}</span>
+            <i style="height:${Math.max(12, Math.round(value / max * 110))}px"></i>
+            <strong>${money.format(value)}</strong>
+            <small>${risk} риск.</small>
+          </button>`;
+        }).join("")}
+      </div>
+    </section>`;
   }
 
   function forecastBar(label, value, max, type) {
@@ -409,8 +462,8 @@
       note: `${noShipPartner.rows.length} ВС на ${money.format(noShipPartner.amount)}, отгрузок почти нет, конверсия ${noShipPartner.conversion}%.`,
       badge: "Партнёр",
       level: "yellow",
-      filterKey: "partner",
-      filterValue: noShipPartner.key
+      objectType: "partner",
+      objectName: noShipPartner.key
     });
     const noShipVendor = groupBy(deals, (deal) => deal.vendor)
       .map(({key, rows}) => ({ key, rows, amount: sum(rows, (deal) => deal.amount), shipments: sum(rows, (deal) => deal.shipmentAmount), stale: rows.filter((deal) => deal.lastActivityDays > 21).length }))
@@ -421,8 +474,8 @@
       note: `Pipeline ${money.format(noShipVendor.amount)}, отгрузок нет, ${noShipVendor.stale} сделок без активности.`,
       badge: "Вендор",
       level: "yellow",
-      filterKey: "vendor",
-      filterValue: noShipVendor.key
+      objectType: "vendor",
+      objectName: noShipVendor.key
     });
     deals.filter((deal) => deal.transferCount >= 3).sort((a, b) => b.transferCount - a.transferCount || b.amount - a.amount).slice(0, 1).forEach((deal) => actions.push({
       title: `Переквалифицировать ${deal.id}`,
@@ -479,7 +532,7 @@
       return { name: key, count: rows.length, won: rows.filter((deal) => deal.status === "Выиграна").length, shipments, last: Math.min(...rows.map((deal) => deal.lastShipmentDays || 999)), activity: sum(rows, (deal) => deal.activityCount), conversion, health: partnerHealthScore(rows), waste: rows.length >= 4 && conversion < 42 && shipments < 5_000_000 };
     }).sort((a, b) => Number(b.waste) - Number(a.waste) || a.last - b.last);
     return table(["Партнёр","Health","ВС","Закрыто","Отгрузка 1С","Последняя отгрузка","Активности","Конверсия","Риск"], rows.slice(0, 14).map((row) => [
-      row.name, scorePill(row.health), row.count, row.won, money.format(row.shipments), row.last > 300 ? "давно / нет" : `${row.last} дн.`, row.activity, `${row.conversion}%`, row.waste ? badge("Тратит время", "red") : badge("Норма", "green")
+      objectLink("partner", row.name), scorePill(row.health), row.count, row.won, money.format(row.shipments), row.last > 300 ? "давно / нет" : `${row.last} дн.`, row.activity, `${row.conversion}%`, row.waste ? badge("Тратит время", "red") : badge("Норма", "green")
     ]));
   }
 
@@ -490,8 +543,12 @@
       return { name: key, count: rows.length, won: rows.filter((deal) => deal.status === "Выиграна").length, amount, shipments, health: vendorHealthScore(rows), conversion: Math.round(rows.filter((deal) => deal.status === "Выиграна").length / rows.length * 100), avg: amount / rows.length, stale: rows.filter((deal) => deal.lastActivityDays > 21).length, risk: amount > 30_000_000 && shipments < 5_000_000 };
     }).sort((a, b) => Number(b.risk) - Number(a.risk) || b.amount - a.amount);
     return table(["Вендор","Health","ВС","Закрыто","Сумма ВС","Отгрузка 1С","Конверсия","Средний чек","Без активности","Риск"], rows.slice(0, 14).map((row) => [
-      row.name, scorePill(row.health), row.count, row.won, money.format(row.amount), money.format(row.shipments), `${row.conversion}%`, money.format(row.avg), row.stale, row.risk ? badge("Нет отгрузок", "red") : badge("Норма", "green")
+      objectLink("vendor", row.name), scorePill(row.health), row.count, row.won, money.format(row.amount), money.format(row.shipments), `${row.conversion}%`, money.format(row.avg), row.stale, row.risk ? badge("Нет отгрузок", "red") : badge("Норма", "green")
     ]));
+  }
+
+  function objectLink(type, name) {
+    return `<button class="v2-object-link" data-open-object="${type}" data-object-name="${encodeURIComponent(name)}">${name}</button>`;
   }
 
   function renderSdmTeamTable(deals) {
@@ -582,6 +639,7 @@
       ${renderKpis(deals)}
       ${renderProblemZones(baseFilteredDeals())}
       ${renderForecastVisual(deals)}
+      ${renderTrend(baseFilteredDeals())}
       ${renderTodayActions(deals)}
       <section class="v2-table-card">
         <div class="v2-panel-head"><h2>Все возможные сделки</h2><span>${rows.length} в выборке · клик открывает карточку</span></div>
@@ -598,6 +656,56 @@
         </div>
       </section>
     `;
+  }
+
+  function renderObjectDetail(deals, selectedObject) {
+    const objectDeals = deals.filter((deal) => deal[selectedObject.type] === selectedObject.name);
+    const title = selectedObject.type === "partner" ? "Партнёр" : "Вендор";
+    const health = selectedObject.type === "partner" ? partnerHealthScore(objectDeals) : vendorHealthScore(objectDeals);
+    const topRisks = [...objectDeals].sort((a, b) => riskRank(b) - riskRank(a)).slice(0, 6);
+    return `<section class="v2-object-detail">
+      <div class="v2-detail-head">
+        <div>
+          <span class="v2-kicker">${title} · детализация</span>
+          <h2>${selectedObject.name}</h2>
+          <p>${objectDeals.length} ВС · ${money.format(sum(objectDeals, (deal) => deal.amount))} pipeline · ${money.format(sum(objectDeals, (deal) => deal.shipmentAmount))} факт 1С</p>
+        </div>
+        <button class="v2-button secondary" data-back-object>← Назад к дашборду</button>
+      </div>
+      <section class="v2-grid">
+        ${kpi("Health", `${health}/100`, health < 45 ? "критично" : health < 70 ? "требует внимания" : "норма", health < 45 ? "is-danger" : health < 70 ? "is-warning" : "")}
+        ${kpi("Конверсия", `${Math.round(objectDeals.filter((deal) => deal.status === "Выиграна").length / Math.max(objectDeals.length, 1) * 100)}%`, `${objectDeals.filter((deal) => deal.status === "Выиграна").length} закрыто`)}
+        ${kpi("Без активности", objectDeals.filter((deal) => deal.lastActivityDays > 21).length, "21+ день без действия", objectDeals.some((deal) => deal.lastActivityDays > 21) ? "is-danger" : "")}
+        ${kpi("Переносы", sum(objectDeals, (deal) => deal.transferCount), "суммарно по ВС", sum(objectDeals, (deal) => deal.transferCount) >= 3 ? "is-warning" : "")}
+      </section>
+      <section class="v2-two-col">
+        <div class="v2-panel">
+          <div class="v2-panel-head"><h2>Что проверить</h2><span>AI-приоритет</span></div>
+          <div class="v2-list">
+            ${topRisks.map((deal) => `<button class="v2-list-item" data-open-deal="${deal.id}">
+              <span><strong>${deal.id} · ${deal.partner}</strong><span>${deal.vendor} · ${deal.status} · ${money.format(deal.amount)} · ${deal.risks[0] || "без критичных рисков"}</span></span>
+              <em class="v2-badge ${deal.health}">${healthLabels[deal.health]}</em>
+            </button>`).join("") || `<div class="v2-empty">Нет сделок для проверки.</div>`}
+          </div>
+        </div>
+        <div class="v2-panel">
+          <div class="v2-panel-head"><h2>Сделки объекта</h2><span>${objectDeals.length}</span></div>
+          ${renderMiniDealsTable(objectDeals)}
+        </div>
+      </section>
+    </section>`;
+  }
+
+  function renderMiniDealsTable(deals) {
+    const rows = [...deals].sort((a, b) => riskRank(b) - riskRank(a)).slice(0, 10);
+    return table(["ID","Статус","Сумма","AI","Здоровье","Активность"], rows.map((deal) => [
+      `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
+      deal.status,
+      money.format(deal.amount),
+      `${deal.probability}%`,
+      badge(healthLabels[deal.health], deal.health),
+      `${deal.lastActivityDays} дн.`
+    ]));
   }
 
   function renderDealDetail(deals) {
@@ -691,6 +799,26 @@
     render();
   }
 
+  function createBulkTasks() {
+    const deals = filteredDeals()
+      .filter((deal) => deal.status === "В работе" && (deal.health === "red" || deal.burnoutRisk === "Высокий" || deal.transferCount >= 3 || forecastConfidence(deal) < 45))
+      .sort((a, b) => riskRank(b) - riskRank(a))
+      .slice(0, 5);
+    deals.forEach((deal) => {
+      const duplicate = state.tasks.some((task) => task.dealId === deal.id && task.title.includes("AI-план"));
+      if (duplicate) return;
+      state.tasks.unshift({
+        id: `V2-TASK-${String(Date.now()).slice(-6)}-${deal.id}`,
+        dealId: deal.id,
+        title: `AI-план по рисковой ВС: ${deal.partner}`,
+        assignee: state.role === "sdm" || state.role === "sdmLead" ? deal.sdm : deal.pam,
+        priority: deal.health === "red" ? "Критично" : "Важно"
+      });
+    });
+    saveTasks();
+    render();
+  }
+
   function loadTasks() {
     try {
       return JSON.parse(localStorage.getItem("v2Tasks") || "[]");
@@ -708,7 +836,9 @@
       button.addEventListener("click", () => {
         state.role = button.dataset.v2Role;
         state.selectedDealId = null;
+        state.selectedObject = null;
         state.focusZone = "all";
+        state.monthFocus = "all";
         state.filters.employee = "all";
         render();
       });
@@ -717,21 +847,43 @@
       input.addEventListener("change", () => {
         state.filters[input.dataset.filter] = input.value;
         state.selectedDealId = null;
+        state.selectedObject = null;
         state.focusZone = "all";
+        state.monthFocus = "all";
         render();
       });
+    });
+    document.querySelectorAll("[data-preset]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.focusZone = state.focusZone === button.dataset.preset ? "all" : button.dataset.preset;
+        state.monthFocus = "all";
+        state.selectedDealId = null;
+        state.selectedObject = null;
+        render();
+      });
+    });
+    document.querySelector("[data-reset-v2]")?.addEventListener("click", () => {
+      state.filters = { period: "month", region: "all", employee: "all", partner: "all", vendor: "all", status: "all", amount: "all", health: "all" };
+      state.focusZone = "all";
+      state.monthFocus = "all";
+      state.selectedDealId = null;
+      state.selectedObject = null;
+      render();
     });
     document.querySelectorAll("[data-focus-zone]").forEach((button) => {
       button.addEventListener("click", () => {
         const zone = button.dataset.focusZone;
         state.focusZone = state.focusZone === zone ? "all" : zone;
+        state.monthFocus = "all";
         state.selectedDealId = null;
+        state.selectedObject = null;
         render();
       });
     });
     document.querySelectorAll("[data-open-deal]").forEach((row) => {
       row.addEventListener("click", () => {
         state.selectedDealId = row.dataset.openDeal;
+        state.selectedObject = null;
         render();
         requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
       });
@@ -744,9 +896,40 @@
       button.addEventListener("click", () => {
         state.filters[button.dataset.quickFilter] = button.dataset.quickValue;
         state.selectedDealId = null;
+        state.selectedObject = null;
+        state.monthFocus = "all";
         render();
       });
     });
+    document.querySelectorAll("[data-open-object]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        state.selectedObject = { type: button.dataset.openObject, name: decodeURIComponent(button.dataset.objectName) };
+        state.selectedDealId = null;
+        render();
+        requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
+      });
+    });
+    document.querySelector("[data-back-object]")?.addEventListener("click", () => {
+      state.selectedObject = null;
+      render();
+    });
+    document.querySelector("[data-clear-focus]")?.addEventListener("click", () => {
+      state.focusZone = "all";
+      state.monthFocus = "all";
+      state.selectedObject = null;
+      state.selectedDealId = null;
+      render();
+    });
+    document.querySelectorAll("[data-trend-month]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.selectedObject = null;
+        state.selectedDealId = null;
+        state.monthFocus = state.monthFocus === button.dataset.trendMonth ? "all" : button.dataset.trendMonth;
+        render();
+      });
+    });
+    document.querySelector("[data-create-bulk-tasks]")?.addEventListener("click", createBulkTasks);
     document.querySelector("[data-create-task]")?.addEventListener("click", (event) => createTask(event.currentTarget.dataset.createTask));
   }
 
