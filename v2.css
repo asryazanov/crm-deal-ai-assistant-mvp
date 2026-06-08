@@ -644,15 +644,25 @@
 
 .v2-heatmap {
   display: grid;
-  gap: 6px;
+  gap: 5px;
+  overflow: auto;
+  padding-bottom: 2px;
 }
 
 .v2-heatmap-head,
 .v2-heatmap-row {
   display: grid;
-  grid-template-columns: minmax(190px, 1.2fr) repeat(4, minmax(82px, 0.55fr)) minmax(110px, 0.75fr);
-  gap: 8px;
+  grid-template-columns: minmax(190px, 1.35fr) repeat(4, minmax(86px, 0.58fr)) minmax(116px, 0.72fr);
+  gap: 7px;
   align-items: center;
+}
+
+.v2-heatmap-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #fff;
+  padding: 2px 0 4px;
 }
 
 .v2-heatmap-head span {
@@ -663,13 +673,83 @@
   text-transform: uppercase;
 }
 
+.v2-heatmap-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  position: relative;
+  white-space: nowrap;
+}
+
+.v2-help {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-primary);
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: help;
+}
+
+.v2-help em {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(4px);
+  width: min(260px, 72vw);
+  border: 1px solid rgba(23,38,74,0.12);
+  border-radius: 10px;
+  background: var(--color-navy);
+  color: #fff;
+  box-shadow: 0 14px 30px rgba(23,38,74,0.22);
+  padding: 9px 10px;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 750;
+  letter-spacing: 0;
+  line-height: 1.35;
+  text-transform: none;
+  white-space: normal;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
+  z-index: 20;
+}
+
+.v2-help em::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--color-navy);
+}
+
+.v2-help:hover em,
+.v2-help:focus em,
+.v2-help:focus-visible em {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+
 .v2-heatmap-name,
 .v2-heatmap-cell {
   min-width: 0;
   border: 1px solid var(--color-border);
-  border-radius: 10px;
+  border-radius: 9px;
   background: #fff;
-  padding: 10px;
+  padding: 8px 10px;
   text-align: left;
   font-weight: 900;
 }
@@ -680,14 +760,17 @@
 
 .v2-heatmap-name small {
   display: block;
-  margin-top: 3px;
+  margin-top: 2px;
   color: var(--color-muted);
   font-weight: 750;
+  font-size: 11px;
 }
 
 .v2-heatmap-cell {
   text-align: center;
   color: var(--color-muted);
+  min-height: 42px;
+  font-size: 14px;
 }
 
 .v2-heatmap-cell.low {

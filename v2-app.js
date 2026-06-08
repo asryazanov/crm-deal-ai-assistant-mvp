@@ -794,10 +794,10 @@
       .sort((a, b) => b.burnout + b.transfers + b.noShipment + b.lowConfidence - (a.burnout + a.transfers + a.noShipment + a.lowConfidence) || b.amount - a.amount)
       .slice(0, 8);
     const columns = [
-      ["transfers", "3+ переноса"],
-      ["noShipment", "Нет 1С"],
-      ["burnout", "Выгорание"],
-      ["lowConfidence", "Низк. доверие"]
+      ["transfers", "3+ переноса", "Сделки, у которых дата закрытия переносилась три и более раза."],
+      ["noShipment", "Нет 1С", "Есть возможная сделка в CRM, но нет связанной отгрузки/факта в 1С."],
+      ["burnout", "Выгорание", "Сделки без активности, с истёкшим КП или высоким риском потери."],
+      ["lowConfidence", "Низк. доверие", "AI считает прогноз ненадёжным из-за рисков, переносов или расхождения с прогнозом менеджера."]
     ];
     return `<section class="v2-heatmap-board">
       <div class="v2-panel-head">
@@ -805,7 +805,11 @@
         <span>${dimension.label} × риск · клик фильтрует выборку</span>
       </div>
       <div class="v2-heatmap">
-        <div class="v2-heatmap-head"><span>${dimension.label}</span>${columns.map(([, label]) => `<span>${label}</span>`).join("")}<span>Pipeline</span></div>
+        <div class="v2-heatmap-head">
+          <span>${dimension.label}</span>
+          ${columns.map(([, label, tip]) => heatmapHead(label, tip)).join("")}
+          ${heatmapHead("Pipeline", "Общая сумма сделок в выбранном срезе.")}
+        </div>
         ${rows.map((row) => `<div class="v2-heatmap-row">
           <button class="v2-heatmap-name" ${dimension.objectType ? `data-open-object="${dimension.objectType}" data-object-name="${encodeURIComponent(row.key)}"` : `data-heatmap-filter="${dimension.filter}" data-heatmap-value="${encodeURIComponent(row.key)}"`}>
             ${row.key}<small>${row.rows.length} ВС</small>
@@ -822,6 +826,10 @@
     if (state.role === "sdm") return { label: "Вендор", field: "vendor", filter: "vendor", objectType: "vendor" };
     if (state.role === "sdmLead") return { label: "SDM", field: "sdm", filter: "employee" };
     return { label: "Менеджер", field: "sale", filter: "employee" };
+  }
+
+  function heatmapHead(label, tip) {
+    return `<span class="v2-heatmap-title">${label}<button class="v2-help" type="button" aria-label="${label}: ${tip}">?<em role="tooltip">${tip}</em></button></span>`;
   }
 
   function heatmapCell(value, zone, dimension, key) {
