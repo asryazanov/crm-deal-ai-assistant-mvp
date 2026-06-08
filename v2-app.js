@@ -39,6 +39,10 @@
       label: "Руководитель SDM",
       note: "Эффективность SDM-команды, вендорские направления, план-факт и проблемные зоны."
     },
+    dataQuality: {
+      label: "Качество данных",
+      note: "Готовность данных CRM и 1С к пилоту: связи, активности, переносы, КП и прогноз."
+    },
     allDeals: {
       label: "Все сделки",
       note: "Операционный реестр возможных сделок с провалом в карточку."
@@ -63,6 +67,7 @@
   const healthLabels = { green: "Здоровая", yellow: "Требует внимания", red: "Критичная" };
   const money = new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 });
   const number = new Intl.NumberFormat("ru-RU");
+  const pilotData = createPilotData(data);
 
   function compactMoney(value) {
     if (Math.abs(value) >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(value >= 10_000_000_000 ? 0 : 1)} млрд ₽`;
@@ -79,6 +84,42 @@
       document.querySelector(".app-header").after(root);
     }
     return root;
+  }
+
+  function createPilotData(source) {
+    const activities = source.deals.map((deal) => ({
+      id: `ACT-${deal.id}`,
+      dealId: deal.id,
+      owner: deal.sale,
+      count: deal.activityCount,
+      lastActivityDays: deal.lastActivityDays,
+      type: deal.lastActivityDays > 21 ? "Нет свежей активности" : deal.lastActivityDays > 10 ? "Требует обновления" : "Активна"
+    }));
+    const shipments = source.deals
+      .filter((deal) => deal.shipmentAmount > 0)
+      .map((deal) => ({
+        id: `SHP-${deal.id}`,
+        dealId: deal.id,
+        partner: deal.partner,
+        vendor: deal.vendor,
+        amount: deal.shipmentAmount,
+        lastShipmentDays: deal.lastShipmentDays
+      }));
+    const transfers = source.deals.flatMap((deal) => deal.closeDateHistory.map((item, index) => ({
+      id: `TRN-${deal.id}-${index + 1}`,
+      dealId: deal.id,
+      from: item.from,
+      to: item.to,
+      reason: item.reason
+    })));
+    return {
+      deals: source.deals,
+      plans: source.plans,
+      activities,
+      shipments,
+      transfers,
+      users: [...new Set(source.deals.flatMap((deal) => [deal.sale, deal.pam, deal.sdm]))]
+    };
   }
 
   function filteredDeals() {
@@ -283,7 +324,7 @@
   function employeeOptions() {
     if (state.role === "pam") return data.pams;
     if (state.role === "sdm" || state.role === "sdmLead") return data.sdms;
-    if (state.role === "salesLead" || state.role === "allDeals") return data.sales;
+    if (state.role === "salesLead" || state.role === "allDeals" || state.role === "dataQuality") return data.sales;
     return data.sales;
   }
 
@@ -300,9 +341,11 @@
 
   function renderRoleScreen(deals, baseDeals = deals) {
     if (state.selectedObject) return renderObjectDetail(baseDeals, state.selectedObject);
+    if (state.role === "dataQuality") return renderDataQualityScreen(baseDeals);
     if (state.role === "allDeals") return renderAllDeals(deals);
     return `
       ${renderKpis(deals)}
+      ${renderExecutiveSummary(deals)}
       ${renderSalesCommandCenter(deals, baseDeals)}
       ${renderProblemHeatmap(baseDeals)}
       ${renderTodayActions(deals)}
@@ -348,6 +391,35 @@
         ${kpi("Pipeline в работе", compactMoney(openPipeline), `${red} красных ВС`, red ? "is-danger" : "", money.format(openPipeline))}
       </section>
     `;
+  }
+
+  function renderExecutiveSummary(deals) {
+    const plan = planForCurrentRole();
+    const forecast = forecastAmount(deals);
+    const gap = Math.max(0, plan - forecast);
+    const riskDeals = deals.filter((deal) => deal.status === "В работе" && (deal.health === "red" || deal.burnoutRisk === "Высокий" || deal.transferCount >= 3 || forecastConfidence(deal) < 45));
+    const riskAmount = sum(riskDeals, (deal) => deal.amount);
+    const topStage = groupBy(riskDeals, (deal) => deal.stage)
+      .map(({key, rows}) => ({ key, amount: sum(rows, (deal) => deal.amount), count: rows.length }))
+      .sort((a, b) => b.amount - a.amount)[0];
+    const noShipment = deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length;
+    return `<section class="v2-summary">
+      <article>
+        <span>Состояние периода</span>
+        <strong>${gap ? `Разрыв ${compactMoney(gap)}` : "План закрывается прогнозом"}</strong>
+        <small>${gap ? "AI предлагает подтянуть сделки с высокой вероятностью и свежей активностью." : "Главная задача — удержать качество pipeline и не потерять сделки с рисками."}</small>
+      </article>
+      <article class="${riskAmount ? "is-danger" : ""}">
+        <span>Сумма под риском</span>
+        <strong>${compactMoney(riskAmount)}</strong>
+        <small>${riskDeals.length} ВС: красные, выгорание, переносы или низкое доверие.</small>
+      </article>
+      <article>
+        <span>Где смотреть первым</span>
+        <strong>${topStage ? topStage.key : "Нет критичного фокуса"}</strong>
+        <small>${topStage ? `${topStage.count} ВС на ${compactMoney(topStage.amount)}.` : "Срез выглядит управляемым."} ${noShipment} ВС без факта 1С.</small>
+      </article>
+    </section>`;
   }
 
   function kpi(label, value, note, mod = "", title = "") {
@@ -747,10 +819,173 @@
     </div>`;
   }
 
+  function qualityChecks(deals) {
+    return [
+      {
+        key: "activity",
+        title: "Нет свежей активности 21+ день",
+        count: deals.filter((deal) => deal.lastActivityDays > 21).length,
+        amount: sum(deals.filter((deal) => deal.lastActivityDays > 21), (deal) => deal.amount),
+        severity: "critical",
+        action: "Подтянуть звонки, письма, встречи и задачи из CRM."
+      },
+      {
+        key: "shipment",
+        title: "Нет связи с отгрузкой 1С",
+        count: deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length,
+        amount: sum(deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount), (deal) => deal.amount),
+        severity: "critical",
+        action: "Настроить связку ВС ↔ отгрузка 1С по партнёру, вендору, сумме и периоду."
+      },
+      {
+        key: "transferReason",
+        title: "Переносы без полноценной истории",
+        count: deals.filter((deal) => deal.transferCount > deal.closeDateHistory.length || deal.closeDateHistory.some((item) => !item.reason)).length,
+        amount: sum(deals.filter((deal) => deal.transferCount > deal.closeDateHistory.length || deal.closeDateHistory.some((item) => !item.reason)), (deal) => deal.amount),
+        severity: "warning",
+        action: "Сделать причину переноса обязательным полем."
+      },
+      {
+        key: "expiredCp",
+        title: "Истёк срок КП",
+        count: deals.filter((deal) => deal.cpExpired).length,
+        amount: sum(deals.filter((deal) => deal.cpExpired), (deal) => deal.amount),
+        severity: "warning",
+        action: "Хранить дату КП и срок действия, автоматически снижать доверие."
+      },
+      {
+        key: "forecastMismatch",
+        title: "Прогноз роли выше AI на 22%+",
+        count: deals.filter((deal) => deal.managerForecast - deal.aiForecast > deal.amount * 0.22).length,
+        amount: sum(deals.filter((deal) => deal.managerForecast - deal.aiForecast > deal.amount * 0.22), (deal) => deal.amount),
+        severity: "warning",
+        action: "Выводить расхождение руководителю и требовать комментарий."
+      },
+      {
+        key: "roles",
+        title: "Не заполнены роли Sale / PAM / SDM",
+        count: deals.filter((deal) => !deal.sale || !deal.pam || !deal.sdm).length,
+        amount: sum(deals.filter((deal) => !deal.sale || !deal.pam || !deal.sdm), (deal) => deal.amount),
+        severity: "critical",
+        action: "Сделать владельцев сделки обязательными для расчёта дашбордов."
+      }
+    ];
+  }
+
+  function renderDataQualityScreen(deals) {
+    const checks = qualityChecks(deals);
+    const critical = checks.filter((check) => check.severity === "critical").reduce((acc, check) => acc + check.count, 0);
+    const warnings = checks.filter((check) => check.severity === "warning").reduce((acc, check) => acc + check.count, 0);
+    const affectedAmount = sum(checks, (check) => check.amount);
+    const readiness = Math.max(35, Math.min(96, 100 - critical * 0.7 - warnings * 0.25));
+    return `
+      <section class="v2-grid">
+        ${kpi("Готовность к пилоту", `${Math.round(readiness)}%`, readiness < 65 ? "нужна чистка данных" : "можно идти в пилот", readiness < 65 ? "is-danger" : readiness < 82 ? "is-warning" : "")}
+        ${kpi("Проверок качества", checks.length, "CRM + 1С + forecast")}
+        ${kpi("Критичных разрывов", critical, "влияют на точность прогноза", critical ? "is-danger" : "")}
+        ${kpi("Сумма под вопросом", compactMoney(affectedAmount), "по всем найденным проблемам", affectedAmount ? "is-warning" : "", money.format(affectedAmount))}
+        ${kpi("API-сущностей", "5", "deals, plans, activities, shipments, transfers")}
+      </section>
+      <section class="v2-summary">
+        <article>
+          <span>Что готово</span>
+          <strong>Демо-модель нормализована</strong>
+          <small>Фронт уже работает поверх сущностей, которые можно вынести в backend API.</small>
+        </article>
+        <article class="is-danger">
+          <span>Главный риск пилота</span>
+          <strong>Связь CRM ↔ 1С</strong>
+          <small>Без устойчивой связи отгрузок прогноз будет выглядеть убедительно, но спорно для бизнеса.</small>
+        </article>
+        <article>
+          <span>Следующий шаг</span>
+          <strong>Выгрузка 3-6 месяцев</strong>
+          <small>Нужны реальные сделки, активности, переносы, планы и факт отгрузок.</small>
+        </article>
+      </section>
+      <section class="v2-two-col">
+        <div class="v2-panel">
+          <div class="v2-panel-head"><h2>Нормализованные сущности</h2><span>API-like слой</span></div>
+          ${renderEntityMap()}
+        </div>
+        <div class="v2-panel">
+          <div class="v2-panel-head"><h2>Backlog интеграций</h2><span>пилот</span></div>
+          ${renderPilotBacklog()}
+        </div>
+      </section>
+      <section class="v2-table-card">
+        <div class="v2-panel-head"><h2>Проверки качества данных</h2><span>${checks.length} правил</span></div>
+        ${table(["Проверка","Найдено","Сумма","Влияние","Что сделать"], checks.map((check) => [
+          check.title,
+          check.count,
+          compactMoney(check.amount),
+          badge(check.severity === "critical" ? "Критично" : "Важно", check.severity === "critical" ? "red" : "yellow"),
+          check.action
+        ]))}
+      </section>
+      <section class="v2-table-card">
+        <div class="v2-panel-head"><h2>Сделки, которые мешают точности</h2><span>top impact</span></div>
+        ${renderDataQualityDeals(deals)}
+      </section>
+    `;
+  }
+
+  function renderEntityMap() {
+    const entities = [
+      ["deals", pilotData.deals.length, "CRM: возможные сделки, роли, стадии, суммы, прогнозы"],
+      ["plans", pilotData.plans.length, "1С: планы по ролям и периодам"],
+      ["activities", pilotData.activities.length, "CRM/почта/календарь: последняя активность и число касаний"],
+      ["shipments", pilotData.shipments.length, "1С: факт отгрузок и дата последней отгрузки"],
+      ["transfers", pilotData.transfers.length, "CRM: история изменения даты закрытия"]
+    ];
+    return `<div class="v2-entity-list">${entities.map(([name, count, note]) => `
+      <div class="v2-entity-item"><strong>${name}</strong><span>${number.format(count)}</span><small>${note}</small></div>
+    `).join("")}</div>`;
+  }
+
+  function renderPilotBacklog() {
+    const items = [
+      ["CRM API", "Получать сделки, роли, стадии, активности и историю изменений."],
+      ["1С API", "Получать планы, факт отгрузок и последнюю дату отгрузки партнёра/вендора."],
+      ["Правила качества", "Фиксировать обязательные поля и причины переносов."],
+      ["Task API", "Создавать задачи в CRM и отслеживать исполнение."],
+      ["ML-калибровка", "После накопления истории сравнить rule-based прогноз с фактическими закрытиями."]
+    ];
+    return `<div class="v2-list">${items.map(([title, note], index) => `
+      <div class="v2-list-item"><span><strong>${index + 1}. ${title}</strong><span>${note}</span></span>${badge(index < 2 ? "первым" : "позже", index < 2 ? "red" : "yellow")}</div>
+    `).join("")}</div>`;
+  }
+
+  function renderDataQualityDeals(deals) {
+    const rows = [...deals]
+      .map((deal) => ({
+        deal,
+        issues: [
+          deal.lastActivityDays > 21 ? "нет активности" : "",
+          deal.status !== "Проиграна" && !deal.shipmentAmount ? "нет 1С" : "",
+          deal.cpExpired ? "КП истёк" : "",
+          deal.managerForecast - deal.aiForecast > deal.amount * 0.22 ? "прогноз завышен" : "",
+          deal.transferCount >= 3 ? "3+ переноса" : ""
+        ].filter(Boolean)
+      }))
+      .filter((row) => row.issues.length)
+      .sort((a, b) => b.issues.length - a.issues.length || b.deal.amount - a.deal.amount)
+      .slice(0, 12);
+    return table(["ID","Партнёр","Вендор","Сумма","Проблемы","Действие"], rows.map(({deal, issues}) => [
+      `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
+      deal.partner,
+      deal.vendor,
+      compactMoney(deal.amount),
+      issues.join(", "),
+      "Проверить данные перед пилотом"
+    ]));
+  }
+
   function renderAllDeals(deals) {
     const rows = [...deals].sort((a, b) => riskRank(b) - riskRank(a));
     return `
       ${renderKpis(deals)}
+      ${renderExecutiveSummary(deals)}
       ${renderSalesCommandCenter(deals, baseFilteredDeals())}
       ${renderProblemHeatmap(baseFilteredDeals())}
       ${renderTrend(baseFilteredDeals())}

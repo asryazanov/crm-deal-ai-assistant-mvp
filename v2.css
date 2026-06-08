@@ -243,6 +243,53 @@
   color: var(--color-warning-text);
 }
 
+.v2-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.v2-summary article {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  border-left: 4px solid var(--color-primary);
+}
+
+.v2-summary article.is-danger {
+  background: var(--color-danger-bg);
+  border-color: rgba(185,28,28,0.16);
+  border-left-color: var(--color-danger);
+}
+
+.v2-summary span {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.v2-summary strong {
+  color: var(--color-navy);
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.v2-summary article.is-danger strong {
+  color: var(--color-danger-text);
+}
+
+.v2-summary small {
+  color: var(--color-muted);
+  line-height: 1.4;
+}
+
 .v2-zone-board,
 .v2-forecast-board,
 .v2-pipeline-board,
@@ -825,6 +872,38 @@
   line-height: 1.35;
 }
 
+.v2-entity-list {
+  display: grid;
+  gap: 10px;
+}
+
+.v2-entity-item {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.7fr) auto minmax(0, 1.4fr);
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  padding: 12px;
+}
+
+.v2-entity-item strong {
+  color: var(--color-primary);
+  font-size: 14px;
+}
+
+.v2-entity-item span {
+  color: var(--color-navy);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.v2-entity-item small {
+  color: var(--color-muted);
+  line-height: 1.35;
+}
+
 .v2-badge {
   display: inline-flex;
   align-items: center;
@@ -1044,6 +1123,7 @@
 @media (max-width: 1180px) {
   .v2-filter-row,
   .v2-grid,
+  .v2-summary,
   .v2-command-grid,
   .v2-dashboard,
   .v2-two-col,
@@ -1060,6 +1140,7 @@
   }
   .v2-filter-row,
   .v2-grid,
+  .v2-summary,
   .v2-command-grid,
   .v2-dashboard,
   .v2-two-col,
@@ -1077,6 +1158,9 @@
   .v2-heatmap-head,
   .v2-heatmap-row,
   .v2-pipeline-row {
+    grid-template-columns: 1fr;
+  }
+  .v2-entity-item {
     grid-template-columns: 1fr;
   }
   .v2-heatmap-row > strong,
