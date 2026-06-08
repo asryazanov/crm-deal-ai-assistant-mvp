@@ -428,28 +428,23 @@
   align-content: start;
 }
 
-.v2-bridge-line {
+.v2-forecast-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  align-items: end;
 }
 
-.v2-bridge-step {
+.v2-forecast-metric {
   min-width: 0;
-  min-height: 178px;
   border: 1px solid var(--color-border);
   border-radius: 14px;
   background: var(--color-surface-soft);
   padding: 12px;
   display: grid;
-  grid-template-rows: auto auto 1fr;
-  gap: 8px;
-  align-items: end;
+  gap: 6px;
 }
 
-.v2-bridge-step span {
-  align-self: start;
+.v2-forecast-metric span {
   color: var(--color-muted);
   font-size: 11px;
   font-weight: 900;
@@ -457,29 +452,106 @@
   text-transform: uppercase;
 }
 
-.v2-bridge-step strong {
+.v2-forecast-metric strong {
   color: var(--color-text);
-  font-size: 15px;
+  font-size: 20px;
   line-height: 1.15;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.v2-bridge-step i {
-  width: 100%;
-  min-height: 18px;
-  border-radius: 8px 8px 4px 4px;
-  background: var(--color-primary);
+.v2-forecast-metric small {
+  color: var(--color-muted);
+  line-height: 1.25;
 }
 
-.v2-bridge-step.plan i { background: var(--color-navy); }
-.v2-bridge-step.fact i { background: var(--color-success); }
-.v2-bridge-step.ai i { background: var(--color-primary); }
-.v2-bridge-step.gap {
+.v2-forecast-metric.plan {
+  border-color: rgba(23,38,74,0.18);
+}
+
+.v2-forecast-metric.fact strong,
+.v2-forecast-metric.closed strong {
+  color: var(--color-success-text);
+}
+
+.v2-forecast-metric.ai strong {
+  color: var(--color-primary);
+}
+
+.v2-forecast-metric.gap {
   background: var(--color-danger-bg);
   border-color: rgba(185,28,28,0.18);
 }
-.v2-bridge-step.gap i { background: var(--color-danger); }
-.v2-bridge-step.gap strong { color: var(--color-danger-text); }
+
+.v2-forecast-metric.gap strong {
+  color: var(--color-danger-text);
+}
+
+.v2-forecast-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.v2-forecast-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.v2-forecast-progress-head span {
+  color: var(--color-text);
+  font-weight: 900;
+}
+
+.v2-forecast-progress-head strong {
+  color: var(--color-navy);
+  font-size: 20px;
+}
+
+.v2-forecast-progress-track {
+  position: relative;
+  height: 22px;
+  border-radius: 999px;
+  background: #EEF3F5;
+  overflow: hidden;
+}
+
+.v2-forecast-progress-track i,
+.v2-forecast-progress-track em {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+
+.v2-forecast-progress-track i {
+  background: var(--color-primary);
+}
+
+.v2-forecast-progress.fact .v2-forecast-progress-track i {
+  background: var(--color-success);
+}
+
+.v2-forecast-progress.ai .v2-forecast-progress-track i {
+  background: var(--color-primary);
+}
+
+.v2-forecast-progress.closed .v2-forecast-progress-track i {
+  background: var(--color-success);
+}
+
+.v2-forecast-progress-track em {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  transform: translateX(-100%);
+  background: repeating-linear-gradient(45deg, rgba(2,122,72,0.85), rgba(2,122,72,0.85) 6px, rgba(2,122,72,0.45) 6px, rgba(2,122,72,0.45) 12px);
+}
+
+.v2-forecast-progress small {
+  color: var(--color-muted);
+}
 
 .v2-pipeline-list {
   display: grid;
@@ -1154,7 +1226,7 @@
   .v2-forecast-row {
     grid-template-columns: 1fr;
   }
-  .v2-bridge-line,
+  .v2-forecast-metrics,
   .v2-heatmap-head,
   .v2-heatmap-row,
   .v2-pipeline-row {

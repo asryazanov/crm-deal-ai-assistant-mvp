@@ -462,30 +462,51 @@
     const fact = factAmount(deals);
     const ai = forecastAmount(deals);
     const gap = Math.max(0, plan - ai);
-    const openForecast = Math.max(0, ai - fact);
-    const max = Math.max(plan, fact, ai, 1);
+    const factGap = Math.max(0, plan - fact);
+    const factPercent = Math.round(fact / Math.max(plan, 1) * 100);
+    const aiPercent = Math.round(ai / Math.max(plan, 1) * 100);
+    const forecastAdd = Math.max(0, ai - fact);
     return `
       <section class="v2-forecast-board v2-bridge-board">
         <div class="v2-panel-head">
-          <h2>Forecast bridge</h2>
-          <span>план → факт → AI → разрыв</span>
+          <h2>План-факт-прогноз</h2>
+          <span>план · факт · AI · GAP</span>
         </div>
-        <div class="v2-bridge-line">
-          ${bridgeStep("План", plan, max, "plan")}
-          ${bridgeStep("Факт", fact, max, "fact")}
-          ${bridgeStep("+ AI pipeline", openForecast, max, "ai")}
-          ${bridgeStep("Разрыв", gap, max, gap ? "gap" : "fact")}
+        <div class="v2-forecast-metrics">
+          ${forecastMetric("План", plan, "plan", "целевой объём периода")}
+          ${forecastMetric("Факт", fact, "fact", `${factPercent}% выполнения`)}
+          ${forecastMetric("AI-прогноз", ai, "ai", `+${compactMoney(forecastAdd)} к факту`)}
+          ${forecastMetric("GAP", gap, gap ? "gap" : "closed", gap ? `не хватает до плана` : "план закрывается прогнозом")}
         </div>
+        ${forecastProgress("Факт к плану", fact, plan, "fact", factGap ? `Осталось закрыть фактом ${compactMoney(factGap)}` : `Факт выше плана на ${compactMoney(fact - plan)}`)}
+        ${forecastProgress("Прогноз к плану", ai, plan, gap ? "ai" : "closed", gap ? `GAP после AI-прогноза ${compactMoney(gap)}` : `Прогноз выше плана на ${compactMoney(ai - plan)}`)}
         <div class="v2-insight">${mainInsight(deals)}</div>
       </section>
     `;
   }
 
-  function bridgeStep(label, value, max, type) {
-    return `<div class="v2-bridge-step ${type}">
+  function forecastMetric(label, value, type, note) {
+    return `<div class="v2-forecast-metric ${type}">
       <span>${label}</span>
       <strong title="${money.format(value)}">${compactMoney(value)}</strong>
-      <i style="height:${Math.max(18, Math.round(value / max * 118))}px"></i>
+      <small>${note}</small>
+    </div>`;
+  }
+
+  function forecastProgress(label, value, plan, type, note) {
+    const percent = Math.round(value / Math.max(plan, 1) * 100);
+    const capped = Math.min(100, Math.max(0, percent));
+    const overflow = Math.max(0, percent - 100);
+    return `<div class="v2-forecast-progress ${type}">
+      <div class="v2-forecast-progress-head">
+        <span>${label}</span>
+        <strong>${percent}%</strong>
+      </div>
+      <div class="v2-forecast-progress-track">
+        <i style="width:${capped}%"></i>
+        ${overflow ? `<em style="width:${Math.min(40, overflow)}%"></em>` : ""}
+      </div>
+      <small>${note}</small>
     </div>`;
   }
 
