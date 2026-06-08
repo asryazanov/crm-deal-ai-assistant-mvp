@@ -829,7 +829,7 @@
   }
 
   function heatmapHead(label, tip) {
-    return `<span class="v2-heatmap-title">${label}<button class="v2-help" type="button" aria-label="${label}: ${tip}">?<em role="tooltip">${tip}</em></button></span>`;
+    return `<span class="v2-heatmap-title">${label}<button class="v2-help" type="button" aria-label="${label}: ${tip}" data-tooltip="${tip}">?<em role="tooltip">${tip}</em></button></span>`;
   }
 
   function heatmapCell(value, zone, dimension, key) {
@@ -1209,6 +1209,39 @@
     localStorage.setItem("v2Tasks", JSON.stringify(state.tasks));
   }
 
+  function tooltipLayer() {
+    let layer = document.getElementById("v2TooltipLayer");
+    if (!layer) {
+      layer = document.createElement("div");
+      layer.id = "v2TooltipLayer";
+      layer.className = "v2-tooltip-layer";
+      layer.setAttribute("role", "tooltip");
+      document.body.appendChild(layer);
+    }
+    return layer;
+  }
+
+  function showTooltip(button) {
+    const text = button.dataset.tooltip;
+    if (!text) return;
+    const layer = tooltipLayer();
+    layer.textContent = text;
+    layer.classList.add("is-visible");
+    const rect = button.getBoundingClientRect();
+    const layerRect = layer.getBoundingClientRect();
+    const top = Math.max(12, rect.top + window.scrollY - layerRect.height - 10);
+    const left = Math.min(
+      window.scrollX + window.innerWidth - layerRect.width - 12,
+      Math.max(12, rect.left + window.scrollX + rect.width / 2 - layerRect.width / 2)
+    );
+    layer.style.top = `${top}px`;
+    layer.style.left = `${left}px`;
+  }
+
+  function hideTooltip() {
+    document.getElementById("v2TooltipLayer")?.classList.remove("is-visible");
+  }
+
   function wireEvents() {
     document.querySelectorAll("[data-v2-role]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1333,6 +1366,20 @@
         state.stageFocus = state.stageFocus === button.dataset.stagePick ? "all" : button.dataset.stagePick;
         render();
       });
+    });
+    document.querySelectorAll("[data-tooltip]").forEach((button) => {
+      button.addEventListener("mouseenter", () => showTooltip(button));
+      button.addEventListener("focus", () => showTooltip(button));
+      button.addEventListener("mouseleave", hideTooltip);
+      button.addEventListener("blur", hideTooltip);
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        showTooltip(button);
+      });
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("[data-tooltip]")) hideTooltip();
     });
     document.querySelector("[data-create-bulk-tasks]")?.addEventListener("click", createBulkTasks);
     document.querySelector("[data-create-task]")?.addEventListener("click", (event) => createTask(event.currentTarget.dataset.createTask));

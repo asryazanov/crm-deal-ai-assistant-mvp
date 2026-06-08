@@ -700,11 +700,12 @@
 }
 
 .v2-help em {
+  display: none;
+}
+
+.v2-tooltip-layer {
   position: absolute;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  transform: translateX(-50%) translateY(4px);
-  width: min(260px, 72vw);
+  width: min(280px, calc(100vw - 24px));
   border: 1px solid rgba(23,38,74,0.12);
   border-radius: 10px;
   background: var(--color-navy);
@@ -721,11 +722,12 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  transform: translateY(4px);
   transition: opacity 120ms ease, transform 120ms ease, visibility 120ms ease;
-  z-index: 20;
+  z-index: 9999;
 }
 
-.v2-help em::after {
+.v2-tooltip-layer::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -735,12 +737,10 @@
   border-top-color: var(--color-navy);
 }
 
-.v2-help:hover em,
-.v2-help:focus em,
-.v2-help:focus-visible em {
+.v2-tooltip-layer.is-visible {
   opacity: 1;
   visibility: visible;
-  transform: translateX(-50%) translateY(0);
+  transform: translateY(0);
 }
 
 .v2-heatmap-name,
