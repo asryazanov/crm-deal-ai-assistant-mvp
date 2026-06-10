@@ -31,7 +31,7 @@
     },
     pam: {
       label: "PAM",
-      note: "Партнёрская эффективность, конверсия, отгрузки из 1С и партнёры без результата."
+      note: "Партнёрская эффективность, конверсия, маржинальность и партнёры без результата."
     },
     sdm: {
       label: "SDM",
@@ -55,11 +55,11 @@
     },
     closedAnalysis: {
       label: "Анализ закрытых ВС",
-      note: "Причины закрытия, реализация через 1С, потенциал реанимации и эффект."
+      note: "Причины закрытия, факт реализации, потенциал реанимации и эффект."
     },
     dataQuality: {
       label: "Качество данных",
-      note: "Готовность данных CRM и 1С к пилоту: связи, активности, переносы, КП и прогноз."
+      note: "Готовность данных CRM и учётных систем к пилоту: планы, маржа, активности, переносы, КП и прогноз."
     }
   };
 
@@ -226,7 +226,7 @@
   function focusMatch(deal, zone) {
     return {
       transfers: deal.transferCount >= 3,
-      noShipment: deal.status !== "Проиграна" && !deal.shipmentAmount,
+      lowMargin: isLowMargin(deal),
       burnout: deal.burnoutRisk === "Высокий" || deal.cpExpired || deal.lastActivityDays > 21,
       lowConfidence: forecastConfidence(deal) < 45
     }[zone] || true;
@@ -273,6 +273,43 @@
     return sum(deals.filter((deal) => deal.status === "Выиграна"), (deal) => deal.shipmentAmount || deal.amount);
   }
 
+  function marginPercent(deal) {
+    return Number(((deal.marginAmount || 0) / Math.max(deal.amount || 0, 1) * 100).toFixed(1));
+  }
+
+  function isLowMargin(deal) {
+    return marginPercent(deal) < 5;
+  }
+
+  function marginPlanAmount(plan) {
+    return Math.round(plan * 0.09);
+  }
+
+  function factMarginAmount(deals) {
+    return sum(deals.filter((deal) => deal.status === "Выиграна"), (deal) => {
+      const realizedAmount = deal.shipmentAmount || deal.amount;
+      return realizedAmount * marginPercent(deal) / 100;
+    });
+  }
+
+  function forecastMarginAmount(deals) {
+    return factMarginAmount(deals) + sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.aiForecast * marginPercent(deal) / 100);
+  }
+
+  function humanForecastMarginAmount(deals) {
+    return factMarginAmount(deals) + sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.managerForecast * marginPercent(deal) / 100);
+  }
+
+  function averageMarginPercent(deals) {
+    const amount = sum(deals, (deal) => deal.amount);
+    return amount ? Number((sum(deals, (deal) => deal.marginAmount || 0) / amount * 100).toFixed(1)) : 0;
+  }
+
+  function formatMarginPercent(dealOrValue) {
+    const value = typeof dealOrValue === "number" ? dealOrValue : marginPercent(dealOrValue);
+    return `${Number(value).toFixed(1)}%`;
+  }
+
   function forecastAmount(deals) {
     return sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.aiForecast) + factAmount(deals);
   }
@@ -292,7 +329,7 @@
     if (deal.lastActivityDays > 21) score -= 18;
     else if (deal.lastActivityDays > 10) score -= 8;
     if (deal.cpExpired) score -= 14;
-    if (!deal.shipmentAmount) score -= 7;
+    if (isLowMargin(deal)) score -= 8;
     if (isInflatedForecast(deal)) score -= 12;
     return Math.max(5, Math.min(98, Math.round(score)));
   }
@@ -315,12 +352,13 @@
   }
 
   function transferFailureRisk(deal) {
+    if (deal.status === "Выиграна") return 8;
+    if (deal.status === "Проиграна" || deal.status === "Отменена") return 82;
     let score = deal.transferCount * 18 + deal.riskScore * 7;
     if (deal.lastActivityDays > 21) score += 24;
     else if (deal.lastActivityDays > 10) score += 12;
     if (deal.cpExpired) score += 18;
     if (deal.burnoutRisk === "Высокий") score += 20;
-    if (deal.status !== "В работе") score = Math.max(score, deal.status === "Выиграна" ? 8 : 72);
     return Math.max(2, Math.min(98, Math.round(score)));
   }
 
@@ -332,7 +370,8 @@
       if (deal.probability < 30 && (deal.lastActivityDays > 21 || deal.cpExpired || deal.transferCount >= 3)) tags.push({ label: "Мёртвая", color: "red" });
       if (deal.lastActivityDays > 14) tags.push({ label: "Нет следующего шага", color: "yellow" });
       if (deal.amount >= 50_000_000 && (deal.health === "red" || deal.transferCount >= 2 || forecastConfidence(deal) < 55)) tags.push({ label: "Нужен руководитель", color: "red" });
-      if (!deal.shipmentAmount || deal.risks.some((risk) => risk.toLowerCase().includes("вендор"))) tags.push({ label: "Нужен вендор / партнёр", color: "yellow" });
+      if (deal.risks.some((risk) => risk.toLowerCase().includes("вендор"))) tags.push({ label: "Нужен вендор / партнёр", color: "yellow" });
+      if (isLowMargin(deal)) tags.push({ label: "Низкая маржа", color: "red" });
       if (deal.cpExpired || deal.risks.some((risk) => risk.toLowerCase().includes("бюджет"))) tags.push({ label: "Коммерческая корректировка", color: "blue" });
     } else {
       tags.push({ label: deal.status === "Выиграна" ? "Реализована" : "Закрыта", color: deal.status === "Выиграна" ? "green" : "red" });
@@ -428,7 +467,7 @@
     const presets = [
       ["burnout", "Выгорание"],
       ["transfers", "3+ переноса"],
-      ["noShipment", "Нет отгрузок"],
+      ["lowMargin", "Низкая маржа"],
       ["lowConfidence", "Низкое доверие"]
     ];
     return `<div class="v2-preset-row">
@@ -442,7 +481,7 @@
     if (state.focusZone === "all" && state.monthFocus === "all" && state.stageFocus === "all") return "";
     const labels = {
       transfers: "3+ переноса",
-      noShipment: "нет отгрузки в 1С",
+      lowMargin: "низкая маржа",
       burnout: "выгорание",
       lowConfidence: "низкое доверие"
     };
@@ -514,6 +553,10 @@
     const plan = planForCurrentRole();
     const fact = factAmount(deals);
     const forecast = forecastAmount(deals);
+    const marginPlan = marginPlanAmount(plan);
+    const marginFact = factMarginAmount(deals);
+    const marginForecast = forecastMarginAmount(deals);
+    const marginGap = Math.max(0, marginPlan - marginForecast);
     const confidence = dashboardConfidence(deals);
     const confidenceMeta = confidenceLevel(confidence);
     const gap = Math.max(0, plan - forecast);
@@ -521,11 +564,12 @@
     const openPipeline = sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.amount);
     return `
       <section class="v2-grid">
-        ${kpi("План из 1С", compactMoney(plan), `${periodLabel()} · выбранная роль`, "", money.format(plan))}
-        ${kpi("Факт", compactMoney(fact), `${Math.round((fact / Math.max(plan, 1)) * 100)}% выполнения`, "", money.format(fact))}
-        ${kpi("Прогноз AI", compactMoney(forecast), `разрыв ${compactMoney(gap)}`, "", money.format(forecast))}
+        ${kpi("План: оборот / маржа", compactMoney(plan), `маржа ${compactMoney(marginPlan)} · ${periodLabel()}`, "", money.format(plan))}
+        ${kpi("Факт: оборот / маржа", compactMoney(fact), `маржа ${compactMoney(marginFact)} · ${Math.round((fact / Math.max(plan, 1)) * 100)}% оборота`, "", money.format(fact))}
+        ${kpi("AI: оборот / маржа", compactMoney(forecast), `маржа ${compactMoney(marginForecast)} · GAP ${compactMoney(gap)}`, marginGap ? "is-warning" : "", money.format(forecast))}
+        ${kpi("GAP маржи", compactMoney(marginGap), gap ? `GAP оборота ${compactMoney(gap)}` : "оборот закрывается", marginGap ? "is-danger" : "", money.format(marginGap))}
         ${kpi("Доверие к прогнозу", `${confidence}%`, confidenceMeta.label, confidenceMeta.color === "red" ? "is-danger" : confidenceMeta.color === "yellow" ? "is-warning" : "")}
-        ${kpi("Pipeline в работе", compactMoney(openPipeline), `${red} красных ВС`, red ? "is-danger" : "", money.format(openPipeline))}
+        ${kpi("Pipeline / средняя маржа", compactMoney(openPipeline), `${formatMarginPercent(averageMarginPercent(deals))} · ${red} красных ВС`, red ? "is-danger" : "", money.format(openPipeline))}
       </section>
     `;
   }
@@ -539,7 +583,7 @@
     const topStage = groupBy(riskDeals, (deal) => deal.stage)
       .map(({key, rows}) => ({ key, amount: sum(rows, (deal) => deal.amount), count: rows.length }))
       .sort((a, b) => b.amount - a.amount)[0];
-    const noShipment = deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length;
+    const lowMargin = deals.filter(isLowMargin);
     return `<section class="v2-summary">
       <article>
         <span>Состояние периода</span>
@@ -554,7 +598,7 @@
       <article>
         <span>Где смотреть первым</span>
         <strong>${topStage ? topStage.key : "Нет критичного фокуса"}</strong>
-        <small>${topStage ? `${topStage.count} ВС на ${compactMoney(topStage.amount)}.` : "Срез выглядит управляемым."} ${noShipment} ВС без факта 1С.</small>
+        <small>${topStage ? `${topStage.count} ВС на ${compactMoney(topStage.amount)}.` : "Срез выглядит управляемым."} ${lowMargin.length} ВС с маржей ниже 5%.</small>
       </article>
     </section>`;
   }
@@ -571,26 +615,29 @@
     const plan = planForCurrentRole();
     const fact = factAmount(deals);
     const forecast = forecastAmount(deals);
+    const marginPlan = marginPlanAmount(plan);
+    const marginFact = factMarginAmount(deals);
+    const marginForecast = forecastMarginAmount(deals);
     const gap = Math.max(0, plan - forecast);
+    const marginGap = Math.max(0, marginPlan - marginForecast);
     const riskDeals = highRiskDeals(deals);
     const riskAmount = sum(riskDeals, (deal) => deal.amount);
     const inflated = deals.filter(isInflatedForecast);
-    const weakManagers = salesManagerRows(deals).filter((row) => row.gap > 0 || row.riskAmount > 0).slice(0, 3);
     return `<section class="v2-leader-brief">
       <article class="${gap ? "is-danger" : ""}">
         <span>Выполняем ли план?</span>
         <strong>${gap ? `GAP ${compactMoney(gap)}` : "План закрывается"}</strong>
-        <small>Факт ${compactMoney(fact)} · AI-прогноз ${compactMoney(forecast)} · план ${compactMoney(plan)}</small>
+        <small>Оборот: факт ${compactMoney(fact)} · AI ${compactMoney(forecast)} · план ${compactMoney(plan)}</small>
+      </article>
+      <article class="${marginGap ? "is-danger" : ""}">
+        <span>Что с маржей?</span>
+        <strong>${marginGap ? `GAP ${compactMoney(marginGap)}` : "Маржа закрывается"}</strong>
+        <small>Маржа: факт ${compactMoney(marginFact)} · AI ${compactMoney(marginForecast)} · план ${compactMoney(marginPlan)}</small>
       </article>
       <article class="${riskAmount ? "is-danger" : ""}">
         <span>Что сорвёт период?</span>
         <strong>${compactMoney(riskAmount)}</strong>
         <small>${riskDeals.length} ВС с выгоранием, переносами, красным здоровьем или низким доверием.</small>
-      </article>
-      <article>
-        <span>Кому нужна помощь?</span>
-        <strong>${weakManagers[0]?.name || "Команда в норме"}</strong>
-        <small>${weakManagers.length ? weakManagers.map((row) => row.name).join(", ") : "Нет явного перегруза по рискам."}</small>
       </article>
       <article class="${inflated.length ? "is-danger" : ""}">
         <span>Где прогноз завышен?</span>
@@ -772,8 +819,13 @@
     const plan = planForCurrentRole();
     const fact = factAmount(deals);
     const ai = forecastAmount(deals);
+    const marginPlan = marginPlanAmount(plan);
+    const marginFact = factMarginAmount(deals);
+    const marginAi = forecastMarginAmount(deals);
     const gap = Math.max(0, plan - ai);
     const factGap = Math.max(0, plan - fact);
+    const marginGap = Math.max(0, marginPlan - marginAi);
+    const marginFactGap = Math.max(0, marginPlan - marginFact);
     const factPercent = Math.round(fact / Math.max(plan, 1) * 100);
     const aiPercent = Math.round(ai / Math.max(plan, 1) * 100);
     const forecastAdd = Math.max(0, ai - fact);
@@ -791,6 +843,8 @@
         </div>
         ${forecastProgress("Факт к плану", fact, plan, "fact", factGap ? `Осталось закрыть фактом ${compactMoney(factGap)}` : `Факт выше плана на ${compactMoney(fact - plan)}`)}
         ${forecastProgress("Прогноз к плану", ai, plan, gap ? "ai" : "closed", gap ? `GAP после AI-прогноза ${compactMoney(gap)}` : `Прогноз выше плана на ${compactMoney(ai - plan)}`)}
+        ${forecastProgress("Маржа: факт к плану", marginFact, marginPlan, "fact", marginFactGap ? `Осталось добрать маржи ${compactMoney(marginFactGap)}` : `Факт маржи выше плана на ${compactMoney(marginFact - marginPlan)}`)}
+        ${forecastProgress("Маржа: прогноз к плану", marginAi, marginPlan, marginGap ? "gap" : "closed", marginGap ? `GAP маржи после AI-прогноза ${compactMoney(marginGap)}` : `Маржа закрывается прогнозом`)}
         <div class="v2-insight">${mainInsight(deals)}</div>
       </section>
     `;
@@ -921,29 +975,29 @@
       level: "red",
       dealId: deal.id
     }));
-    const noShipPartner = groupBy(deals, (deal) => deal.partner)
-      .map(({key, rows}) => ({ key, rows, amount: sum(rows, (deal) => deal.amount), shipments: sum(rows, (deal) => deal.shipmentAmount), conversion: avg(rows, (deal) => deal.partnerConversion) }))
-      .filter((item) => item.rows.length >= 3 && item.shipments < 1_000_000)
+    const lowMarginPartner = groupBy(deals, (deal) => deal.partner)
+      .map(({key, rows}) => ({ key, rows, amount: sum(rows, (deal) => deal.amount), lowMargin: rows.filter(isLowMargin), avgMargin: averageMarginPercent(rows) }))
+      .filter((item) => item.lowMargin.length >= 2)
       .sort((a, b) => b.amount - a.amount)[0];
-    if (noShipPartner) actions.push({
-      title: `Разобрать партнёра ${noShipPartner.key}`,
-      note: `${noShipPartner.rows.length} ВС на ${money.format(noShipPartner.amount)}, отгрузок почти нет, конверсия ${noShipPartner.conversion}%.`,
-      badge: "Партнёр",
+    if (lowMarginPartner) actions.push({
+      title: `Проверить маржу партнёра ${lowMarginPartner.key}`,
+      note: `${lowMarginPartner.lowMargin.length} ВС с маржей ниже 5%, средняя маржа портфеля ${formatMarginPercent(lowMarginPartner.avgMargin)}.`,
+      badge: "Маржа",
       level: "yellow",
       objectType: "partner",
-      objectName: noShipPartner.key
+      objectName: lowMarginPartner.key
     });
-    const noShipVendor = groupBy(deals, (deal) => deal.vendor)
-      .map(({key, rows}) => ({ key, rows, amount: sum(rows, (deal) => deal.amount), shipments: sum(rows, (deal) => deal.shipmentAmount), stale: rows.filter((deal) => deal.lastActivityDays > 21).length }))
-      .filter((item) => item.rows.length >= 3 && item.amount > 25_000_000 && item.shipments < 2_000_000)
+    const lowMarginVendor = groupBy(deals, (deal) => deal.vendor)
+      .map(({key, rows}) => ({ key, rows, amount: sum(rows, (deal) => deal.amount), lowMargin: rows.filter(isLowMargin), stale: rows.filter((deal) => deal.lastActivityDays > 21).length }))
+      .filter((item) => item.lowMargin.length >= 2 && item.amount > 25_000_000)
       .sort((a, b) => b.amount - a.amount)[0];
-    if (noShipVendor) actions.push({
-      title: `Эскалировать вендора ${noShipVendor.key}`,
-      note: `Pipeline ${money.format(noShipVendor.amount)}, отгрузок нет, ${noShipVendor.stale} сделок без активности.`,
+    if (lowMarginVendor) actions.push({
+      title: `Согласовать условия по вендору ${lowMarginVendor.key}`,
+      note: `Pipeline ${money.format(lowMarginVendor.amount)}, ${lowMarginVendor.lowMargin.length} низкомаржинальных ВС, ${lowMarginVendor.stale} сделок без активности.`,
       badge: "Вендор",
       level: "yellow",
       objectType: "vendor",
-      objectName: noShipVendor.key
+      objectName: lowMarginVendor.key
     });
     deals.filter((deal) => deal.transferCount >= 3).sort((a, b) => b.transferCount - a.transferCount || b.amount - a.amount).slice(0, 1).forEach((deal) => actions.push({
       title: `Переквалифицировать ${deal.id}`,
@@ -989,7 +1043,7 @@
 
   function highRiskDeals(deals) {
     return [...deals]
-      .filter((deal) => deal.status === "В работе" && (deal.health === "red" || deal.burnoutRisk === "Высокий" || deal.transferCount >= 3 || forecastConfidence(deal) < 45 || isInflatedForecast(deal)))
+      .filter((deal) => deal.status === "В работе" && (deal.health === "red" || deal.burnoutRisk === "Высокий" || deal.transferCount >= 3 || forecastConfidence(deal) < 45 || isInflatedForecast(deal) || isLowMargin(deal)))
       .sort((a, b) => b.amount - a.amount || riskRank(b) - riskRank(a));
   }
 
@@ -1000,22 +1054,34 @@
   function salesManagerRows(deals) {
     return groupBy(deals, (deal) => deal.sale).map(({key, rows}) => {
       const managerPlan = planForPerson("Руководитель продаж", key);
+      const managerMarginPlan = marginPlanAmount(managerPlan);
       const fact = factAmount(rows);
       const forecast = forecastAmount(rows);
+      const marginFact = factMarginAmount(rows);
+      const marginForecast = forecastMarginAmount(rows);
       const riskRows = highRiskDeals(rows);
       const inflated = rows.filter(isInflatedForecast);
       const lost = rows.filter((deal) => deal.status === "Проиграна" || deal.status === "Отменена");
       const gap = Math.max(0, managerPlan - forecast);
+      const marginGap = Math.max(0, managerMarginPlan - marginForecast);
+      const lowMarginRows = rows.filter(isLowMargin);
       return {
         name: key,
         rows,
         plan: managerPlan,
+        marginPlan: managerMarginPlan,
         fact,
+        marginFact,
         forecast,
+        marginForecast,
         gap,
+        marginGap,
+        avgMargin: averageMarginPercent(rows),
         completion: Math.round(fact / Math.max(managerPlan, 1) * 100),
         red: rows.filter((deal) => deal.health === "red").length,
         transfers: sum(rows, (deal) => deal.transferCount),
+        lowMargin: lowMarginRows.length,
+        lowMarginAmount: sum(lowMarginRows, (deal) => deal.amount),
         riskDeals: riskRows.length,
         riskAmount: sum(riskRows, (deal) => deal.amount),
         inflated: inflated.length,
@@ -1037,17 +1103,18 @@
 
   function renderSalesTeamTable(deals) {
     const rows = salesManagerRows(deals);
-    return table(["Сотрудник","План","Факт","AI-прогноз","GAP","Вып.","Риск, ₽","Красные","Надутый прогноз","Проигр."], rows.map((row) => [
+    return table(["Сотрудник","План","Факт","AI-прогноз","GAP","Маржа AI","GAP маржи","Ср. маржа","Риск, ₽","Низк. маржа","Надутый прогноз"], rows.map((row) => [
       managerLink(row.name),
       compactMoney(row.plan),
       compactMoney(row.fact),
       compactMoney(row.forecast),
       row.gap ? `<strong class="v2-red-text">${compactMoney(row.gap)}</strong>` : "закрыто",
-      `${row.completion}%`,
+      compactMoney(row.marginForecast),
+      row.marginGap ? `<strong class="v2-red-text">${compactMoney(row.marginGap)}</strong>` : "закрыто",
+      `<strong class="${row.avgMargin < 5 ? "v2-red-text" : "v2-green-text"}">${formatMarginPercent(row.avgMargin)}</strong>`,
       compactMoney(row.riskAmount),
-      row.red,
+      row.lowMargin,
       row.inflated,
-      row.lost
     ]));
   }
 
@@ -1063,6 +1130,7 @@
     const managerDeals = deals.filter((deal) => deal.sale === managerName);
     const row = salesManagerRows(deals).find((item) => item.name === managerName) || salesManagerRows(managerDeals)[0];
     const riskDeals = highRiskDeals(managerDeals).slice(0, 10);
+    const lowMarginDeals = managerDeals.filter(isLowMargin).sort((a, b) => marginPercent(a) - marginPercent(b) || b.amount - a.amount).slice(0, 8);
     const lostDeals = managerDeals.filter((deal) => deal.status === "Проиграна" || deal.status === "Отменена").sort((a, b) => b.amount - a.amount).slice(0, 8);
     return `<section class="v2-object-detail">
       <div class="v2-detail-head">
@@ -1074,11 +1142,14 @@
         <button class="v2-button secondary" data-back-manager>← Назад к руководителю</button>
       </div>
       <section class="v2-grid">
-        ${kpi("План", compactMoney(row?.plan || 0), periodLabel())}
-        ${kpi("Факт", compactMoney(row?.fact || 0), `${row?.completion || 0}% выполнения`)}
-        ${kpi("AI-прогноз", compactMoney(row?.forecast || 0), row?.gap ? `GAP ${compactMoney(row.gap)}` : "прогноз закрывает план", row?.gap ? "is-warning" : "")}
+        ${kpi("Оборот: план", compactMoney(row?.plan || 0), periodLabel())}
+        ${kpi("Оборот: факт", compactMoney(row?.fact || 0), `${row?.completion || 0}% выполнения`)}
+        ${kpi("Оборот: AI / GAP", compactMoney(row?.forecast || 0), row?.gap ? `GAP ${compactMoney(row.gap)}` : "прогноз закрывает план", row?.gap ? "is-warning" : "")}
+        ${kpi("Маржа: план", compactMoney(row?.marginPlan || 0), "9% от плана оборота")}
+        ${kpi("Маржа: факт", compactMoney(row?.marginFact || 0), `средняя ${formatMarginPercent(row?.avgMargin || 0)}`)}
+        ${kpi("Маржа: AI / GAP", compactMoney(row?.marginForecast || 0), row?.marginGap ? `GAP ${compactMoney(row.marginGap)}` : "маржа закрывается", row?.marginGap ? "is-danger" : "")}
         ${kpi("Сумма под риском", compactMoney(row?.riskAmount || 0), `${row?.riskDeals || 0} ВС`, row?.riskAmount ? "is-danger" : "")}
-        ${kpi("Надутый прогноз", row?.inflated || 0, compactMoney(row?.inflatedAmount || 0), row?.inflated ? "is-warning" : "")}
+        ${kpi("Низкая маржа", row?.lowMargin || 0, compactMoney(row?.lowMarginAmount || 0), row?.lowMargin ? "is-danger" : "")}
       </section>
       <section class="v2-summary">
         <article class="${row?.gap ? "is-danger" : ""}">
@@ -1100,22 +1171,25 @@
       <section class="v2-two-col">
         <div class="v2-panel">
           <div class="v2-panel-head"><h2>Рисковые сделки менеджера</h2><span>клик открывает карточку</span></div>
-          ${table(["ID","Партнёр","Сумма","AI","Риск","Действие"], riskDeals.map((deal) => [
+          ${table(["ID","Партнёр","Оборот","Маржа","AI","Риск","Действие"], riskDeals.map((deal) => [
             `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
             deal.partner,
             compactMoney(deal.amount),
+            `${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}`,
             `${deal.probability}%`,
             renderClassification(deal),
             nextAction(deal)
           ]))}
         </div>
         <div class="v2-panel">
-          <div class="v2-panel-head"><h2>Проигранные сделки</h2><span>разбор причин</span></div>
-          ${table(["ID","Сумма","Причина","Эффект"], lostDeals.map((deal) => [
+          <div class="v2-panel-head"><h2>Сделки с низкой маржей</h2><span>${lowMarginDeals.length}</span></div>
+          ${table(["ID","Статус","Партнёр","Оборот","Маржа","Действие"], lowMarginDeals.map((deal) => [
             `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
+            deal.status,
+            deal.partner,
             compactMoney(deal.amount),
-            deal.lossReason,
-            compactMoney(deal.revivalEffect)
+            `<strong class="v2-red-text">${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}</strong>`,
+            nextAction(deal)
           ]))}
         </div>
       </section>
@@ -1126,10 +1200,11 @@
     const rows = groupBy(deals, (deal) => deal.partner).map(({key, rows}) => {
       const shipments = sum(rows, (deal) => deal.shipmentAmount);
       const conversion = avg(rows, (deal) => deal.partnerConversion);
-      return { name: key, count: rows.length, won: rows.filter((deal) => deal.status === "Выиграна").length, shipments, last: Math.min(...rows.map((deal) => deal.lastShipmentDays || 999)), activity: sum(rows, (deal) => deal.activityCount), conversion, health: partnerHealthScore(rows), waste: rows.length >= 4 && conversion < 42 && shipments < 5_000_000 };
+      const lowMargin = rows.filter(isLowMargin);
+      return { name: key, count: rows.length, won: rows.filter((deal) => deal.status === "Выиграна").length, shipments, last: Math.min(...rows.map((deal) => deal.lastShipmentDays || 999)), activity: sum(rows, (deal) => deal.activityCount), conversion, health: partnerHealthScore(rows), avgMargin: averageMarginPercent(rows), lowMargin: lowMargin.length, waste: rows.length >= 4 && conversion < 42 && shipments < 5_000_000 };
     }).sort((a, b) => Number(b.waste) - Number(a.waste) || a.last - b.last);
-    return table(["Партнёр","Health","ВС","Закрыто","Отгрузка 1С","Последняя отгрузка","Активности","Конверсия","Риск"], rows.slice(0, 14).map((row) => [
-      objectLink("partner", row.name), scorePill(row.health), row.count, row.won, money.format(row.shipments), row.last > 300 ? "давно / нет" : `${row.last} дн.`, row.activity, `${row.conversion}%`, row.waste ? badge("Тратит время", "red") : badge("Норма", "green")
+    return table(["Партнёр","Health","ВС","Закрыто","Факт","Средняя маржа","Низк. маржа","Активности","Конверсия","Риск"], rows.slice(0, 14).map((row) => [
+      objectLink("partner", row.name), scorePill(row.health), row.count, row.won, money.format(row.shipments), formatMarginPercent(row.avgMargin), row.lowMargin, row.activity, `${row.conversion}%`, row.waste ? badge("Тратит время", "red") : badge("Норма", "green")
     ]));
   }
 
@@ -1137,10 +1212,11 @@
     const rows = groupBy(deals, (deal) => deal.vendor).map(({key, rows}) => {
       const amount = sum(rows, (deal) => deal.amount);
       const shipments = sum(rows, (deal) => deal.shipmentAmount);
-      return { name: key, count: rows.length, won: rows.filter((deal) => deal.status === "Выиграна").length, amount, shipments, health: vendorHealthScore(rows), conversion: Math.round(rows.filter((deal) => deal.status === "Выиграна").length / rows.length * 100), avg: amount / rows.length, stale: rows.filter((deal) => deal.lastActivityDays > 21).length, risk: amount > 30_000_000 && shipments < 5_000_000 };
+      const lowMargin = rows.filter(isLowMargin);
+      return { name: key, count: rows.length, won: rows.filter((deal) => deal.status === "Выиграна").length, amount, shipments, health: vendorHealthScore(rows), conversion: Math.round(rows.filter((deal) => deal.status === "Выиграна").length / rows.length * 100), avg: amount / rows.length, avgMargin: averageMarginPercent(rows), lowMargin: lowMargin.length, stale: rows.filter((deal) => deal.lastActivityDays > 21).length, risk: lowMargin.length >= 2 };
     }).sort((a, b) => Number(b.risk) - Number(a.risk) || b.amount - a.amount);
-    return table(["Вендор","Health","ВС","Закрыто","Сумма ВС","Отгрузка 1С","Конверсия","Средний чек","Без активности","Риск"], rows.slice(0, 14).map((row) => [
-      objectLink("vendor", row.name), scorePill(row.health), row.count, row.won, money.format(row.amount), money.format(row.shipments), `${row.conversion}%`, money.format(row.avg), row.stale, row.risk ? badge("Нет отгрузок", "red") : badge("Норма", "green")
+    return table(["Вендор","Health","ВС","Закрыто","Сумма ВС","Факт","Средняя маржа","Конверсия","Без активности","Риск"], rows.slice(0, 14).map((row) => [
+      objectLink("vendor", row.name), scorePill(row.health), row.count, row.won, money.format(row.amount), money.format(row.shipments), formatMarginPercent(row.avgMargin), `${row.conversion}%`, row.stale, row.risk ? badge("Низкая маржа", "red") : badge("Норма", "green")
     ]));
   }
 
@@ -1151,10 +1227,10 @@
   function renderSdmTeamTable(deals) {
     const rows = groupBy(deals, (deal) => deal.sdm).map(({key, rows}) => {
       const plan = data.plans.find((plan) => plan.role === "SDM" && plan.name === key && plan.period === state.filters.period)?.plan || 0;
-      return { name: key, plan, fact: factAmount(rows), forecast: forecastAmount(rows), count: rows.length, noShipVendors: groupBy(rows, (deal) => deal.vendor).filter((group) => sum(group.rows, (deal) => deal.shipmentAmount) === 0).length, risk: rows.filter((deal) => deal.health === "red").length };
+      return { name: key, plan, fact: factAmount(rows), forecast: forecastAmount(rows), marginForecast: forecastMarginAmount(rows), count: rows.length, lowMargin: rows.filter(isLowMargin).length, risk: rows.filter((deal) => deal.health === "red").length };
     }).sort((a, b) => b.risk - a.risk || b.forecast - a.forecast);
-    return table(["SDM","План","Факт","Прогноз","ВС","Вендоры без отгрузок","Сделки под риском"], rows.map((row) => [
-      row.name, money.format(row.plan), money.format(row.fact), money.format(row.forecast), row.count, row.noShipVendors, row.risk
+    return table(["SDM","План","Факт","Прогноз","Маржа AI","ВС","Низк. маржа","Сделки под риском"], rows.map((row) => [
+      row.name, money.format(row.plan), money.format(row.fact), money.format(row.forecast), compactMoney(row.marginForecast), row.count, row.lowMargin, row.risk
     ]));
   }
 
@@ -1176,9 +1252,9 @@
     const forecast = forecastAmount(deals);
     const gap = Math.max(0, plan - forecast);
     const burnout = deals.filter((deal) => deal.burnoutRisk === "Высокий").length;
-    const noShipment = deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length;
-    if (gap > 0) return `До выполнения плана за ${periodLabel()} не хватает ${money.format(gap)}. AI рекомендует сфокусироваться на ${burnout} сделках с высоким риском выгорания и ${noShipment} сделках без отгрузки в 1С.`;
-    return `Прогноз AI выше плана на ${money.format(forecast - plan)}. Основной риск — не потерять сделки с переносами и истёкшим КП.`;
+    const lowMargin = deals.filter(isLowMargin).length;
+    if (gap > 0) return `До выполнения плана за ${periodLabel()} не хватает ${money.format(gap)}. AI рекомендует сфокусироваться на ${burnout} сделках с высоким риском выгорания и ${lowMargin} сделках с маржей ниже 5%.`;
+    return `Прогноз AI выше плана на ${money.format(forecast - plan)}. Основной риск — удержать маржу и не потерять сделки с переносами и истёкшим КП.`;
   }
 
   function renderAttentionList(deals) {
@@ -1193,17 +1269,17 @@
   }
 
   function riskRank(deal) {
-    return deal.riskScore * 10 + deal.transferCount * 4 + (deal.burnoutRisk === "Высокий" ? 12 : 0) + (deal.cpExpired ? 8 : 0);
+    return deal.riskScore * 10 + deal.transferCount * 4 + (deal.burnoutRisk === "Высокий" ? 12 : 0) + (deal.cpExpired ? 8 : 0) + (isLowMargin(deal) ? 10 : 0);
   }
 
   function renderProblemZones(deals) {
     const transfers = deals.filter((deal) => deal.transferCount >= 3).length;
-    const noShipment = deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length;
+    const lowMargin = deals.filter(isLowMargin).length;
     const lowConfidence = deals.filter((deal) => forecastConfidence(deal) < 45).length;
     const burned = deals.filter((deal) => deal.burnoutRisk === "Высокий").length;
     const zones = [
       { key: "transfers", label: "3+ переноса", value: transfers, note: "сделки требуют переквалификации", level: transfers ? "red" : "green" },
-      { key: "noShipment", label: "Нет отгрузки в 1С", value: noShipment, note: "есть ВС, нет факта или факт давно", level: noShipment ? "red" : "green" },
+      { key: "lowMargin", label: "Низкая маржа", value: lowMargin, note: "маржа ниже 5%", level: lowMargin ? "red" : "green" },
       { key: "burnout", label: "Высокое выгорание", value: burned, note: "нет активности / истёк КП", level: burned ? "red" : "green" },
       { key: "lowConfidence", label: "Низкое доверие", value: lowConfidence, note: "прогноз требует проверки", level: lowConfidence ? "yellow" : "green" }
     ];
@@ -1227,15 +1303,15 @@
         rows,
         amount: sum(rows, (deal) => deal.amount),
         transfers: rows.filter((deal) => deal.transferCount >= 3).length,
-        noShipment: rows.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length,
+        lowMargin: rows.filter(isLowMargin).length,
         burnout: rows.filter((deal) => deal.burnoutRisk === "Высокий" || deal.cpExpired || deal.lastActivityDays > 21).length,
         lowConfidence: rows.filter((deal) => forecastConfidence(deal) < 45).length
       }))
-      .sort((a, b) => b.burnout + b.transfers + b.noShipment + b.lowConfidence - (a.burnout + a.transfers + a.noShipment + a.lowConfidence) || b.amount - a.amount)
+      .sort((a, b) => b.burnout + b.transfers + b.lowMargin + b.lowConfidence - (a.burnout + a.transfers + a.lowMargin + a.lowConfidence) || b.amount - a.amount)
       .slice(0, 8);
     const columns = [
       ["transfers", "3+ переноса", "Сделки, у которых дата закрытия переносилась три и более раза."],
-      ["noShipment", "Нет 1С", "Есть возможная сделка в CRM, но нет связанной отгрузки/факта в 1С."],
+      ["lowMargin", "Низк. маржа", "Сделки с маржей ниже 5%; требуют проверки коммерческих условий."],
       ["burnout", "Выгорание", "Сделки без активности, с истёкшим КП или высоким риском потери."],
       ["lowConfidence", "Низк. доверие", "AI считает прогноз ненадёжным из-за рисков, переносов или расхождения с прогнозом менеджера."]
     ];
@@ -1299,12 +1375,12 @@
         action: "Подтянуть звонки, письма, встречи и задачи из CRM."
       },
       {
-        key: "shipment",
-        title: "Нет связи с отгрузкой 1С",
-        count: deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount).length,
-        amount: sum(deals.filter((deal) => deal.status !== "Проиграна" && !deal.shipmentAmount), (deal) => deal.amount),
+        key: "lowMargin",
+        title: "Низкая маржа <5%",
+        count: deals.filter(isLowMargin).length,
+        amount: sum(deals.filter(isLowMargin), (deal) => deal.amount),
         severity: "critical",
-        action: "Настроить связку ВС ↔ отгрузка 1С по партнёру, вендору, сумме и периоду."
+        action: "Проверить коммерческие условия, скидки и вендорскую поддержку."
       },
       {
         key: "transferReason",
@@ -1350,10 +1426,10 @@
     return `
       <section class="v2-grid">
         ${kpi("Готовность к пилоту", `${Math.round(readiness)}%`, readiness < 65 ? "нужна чистка данных" : "можно идти в пилот", readiness < 65 ? "is-danger" : readiness < 82 ? "is-warning" : "")}
-        ${kpi("Проверок качества", checks.length, "CRM + 1С + forecast")}
+        ${kpi("Проверок качества", checks.length, "CRM + forecast + маржа")}
         ${kpi("Критичных разрывов", critical, "влияют на точность прогноза", critical ? "is-danger" : "")}
         ${kpi("Сумма под вопросом", compactMoney(affectedAmount), "по всем найденным проблемам", affectedAmount ? "is-warning" : "", money.format(affectedAmount))}
-        ${kpi("API-сущностей", "5", "deals, plans, activities, shipments, transfers")}
+        ${kpi("API-сущностей", "5", "deals, plans, activities, facts, transfers")}
       </section>
       <section class="v2-summary">
         <article>
@@ -1363,13 +1439,13 @@
         </article>
         <article class="is-danger">
           <span>Главный риск пилота</span>
-          <strong>Связь CRM ↔ 1С</strong>
-          <small>Без устойчивой связи отгрузок прогноз будет выглядеть убедительно, но спорно для бизнеса.</small>
+          <strong>Маржа и факт реализации</strong>
+          <small>Без корректной маржи по сделкам управленческий прогноз будет неполным.</small>
         </article>
         <article>
           <span>Следующий шаг</span>
           <strong>Выгрузка 3-6 месяцев</strong>
-          <small>Нужны реальные сделки, активности, переносы, планы и факт отгрузок.</small>
+          <small>Нужны реальные сделки, активности, переносы, планы, маржа и факт реализации.</small>
         </article>
       </section>
       <section class="v2-two-col">
@@ -1402,9 +1478,9 @@
   function renderEntityMap() {
     const entities = [
       ["deals", pilotData.deals.length, "CRM: возможные сделки, роли, стадии, суммы, прогнозы"],
-      ["plans", pilotData.plans.length, "1С: планы по ролям и периодам"],
+      ["plans", pilotData.plans.length, "Планы по ролям, периодам, обороту и марже"],
       ["activities", pilotData.activities.length, "CRM/почта/календарь: последняя активность и число касаний"],
-      ["shipments", pilotData.shipments.length, "1С: факт отгрузок и дата последней отгрузки"],
+      ["facts", pilotData.shipments.length, "Факт реализации и дата последней реализации"],
       ["transfers", pilotData.transfers.length, "CRM: история изменения даты закрытия"]
     ];
     return `<div class="v2-entity-list">${entities.map(([name, count, note]) => `
@@ -1415,7 +1491,7 @@
   function renderPilotBacklog() {
     const items = [
       ["CRM API", "Получать сделки, роли, стадии, активности и историю изменений."],
-      ["1С API", "Получать планы, факт отгрузок и последнюю дату отгрузки партнёра/вендора."],
+      ["ERP API", "Получать планы, факт реализации и последнюю дату реализации партнёра/вендора."],
       ["Правила качества", "Фиксировать обязательные поля и причины переносов."],
       ["Task API", "Создавать задачи в CRM и отслеживать исполнение."],
       ["ML-калибровка", "После накопления истории сравнить rule-based прогноз с фактическими закрытиями."]
@@ -1431,7 +1507,7 @@
         deal,
         issues: [
           deal.lastActivityDays > 21 ? "нет активности" : "",
-          deal.status !== "Проиграна" && !deal.shipmentAmount ? "нет 1С" : "",
+          isLowMargin(deal) ? "низкая маржа" : "",
           deal.cpExpired ? "КП истёк" : "",
           isInflatedForecast(deal) ? "прогноз завышен" : "",
           deal.transferCount >= 3 ? "3+ переноса" : ""
@@ -1484,13 +1560,14 @@
       </section>
       <section class="v2-table-card">
         <div class="v2-panel-head"><h2>Текущие ВС под управлением</h2><span>3 шкалы: выигрыш · закрытие в период · риск срыва</span></div>
-        ${table(["ID","Дата создания","Партнёр","Вендор","Менеджер","Сумма","Выигрыш","В период","Риск срыва","Классификация","Следующее действие"], rows.map((deal) => [
+        ${table(["ID","Дата создания","Партнёр","Оборот","Маржа","Вендор","Менеджер","Выигрыш","В период","Риск срыва","Классификация","Следующее действие"], rows.map((deal) => [
           `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
           formatDate(deal.createdAt),
           deal.partner,
+          compactMoney(deal.amount),
+          `${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}`,
           deal.vendor,
           deal.sale,
-          compactMoney(deal.amount),
           `${deal.probability}%`,
           `${deal.closeInPeriodProbability}%`,
           scorePill(100 - deal.transferFailureRisk),
@@ -1507,10 +1584,10 @@
 
   function nextAction(deal) {
     if (isInflatedForecast(deal)) return "Проверить прогноз роли и зафиксировать основание";
+    if (isLowMargin(deal)) return "Проверить маржу и коммерческие условия";
     if (deal.transferCount >= 3) return "Переквалифицировать или вывести из прогноза";
     if (deal.cpExpired) return "Обновить КП и условия";
     if (deal.lastActivityDays > 14) return "Назначить следующий контакт";
-    if (!deal.shipmentAmount) return "Проверить связь с фактом 1С / вендором";
     return "Подтвердить следующий шаг";
   }
 
@@ -1519,7 +1596,7 @@
     if (isInflatedForecast(deal)) reasons.push("прогноз роли выше AI на 30%+");
     if (deal.transferCount >= 3) reasons.push("системные переносы");
     if (deal.lastActivityDays > 21) reasons.push("позднее обновление");
-    if (!deal.shipmentAmount && deal.status !== "В работе") reasons.push("нет факта 1С");
+    if (isLowMargin(deal)) reasons.push("низкая маржа");
     if (deal.cpExpired) reasons.push("истёк КП");
     if (!reasons.length && deal.partnerConversion < 45) reasons.push("низкая конверсия партнёра");
     return reasons.join(", ") || "требует проверки";
@@ -1542,8 +1619,11 @@
     const fact = factAmount(deals);
     const ai = forecastAmount(deals);
     const human = humanForecastAmount(deals);
+    const marginPlan = marginPlanAmount(plan);
+    const marginAi = forecastMarginAmount(deals);
+    const marginHuman = humanForecastMarginAmount(deals);
     const inflated = deals.filter(isInflatedForecast);
-    const noShipment = deals.filter((deal) => deal.status !== "В работе" && !deal.shipmentAmount);
+    const lowMarginDeals = deals.filter(isLowMargin);
     const lateUpdates = deals.filter((deal) => deal.lastActivityDays > 21);
     const transferDeals = deals.filter((deal) => deal.transferCount >= 3);
     const mismatchRows = [...deals]
@@ -1554,10 +1634,11 @@
     return `
       <section class="v2-grid">
         ${kpi("План", compactMoney(plan), periodLabel(), "", money.format(plan))}
-        ${kpi("Факт 1С", compactMoney(fact), `${Math.round(fact / Math.max(plan, 1) * 100)}% плана`, "", money.format(fact))}
+        ${kpi("Факт", compactMoney(fact), `${Math.round(fact / Math.max(plan, 1) * 100)}% плана`, "", money.format(fact))}
         ${kpi("Прогноз AI", compactMoney(ai), `GAP ${compactMoney(Math.max(0, plan - ai))}`, "", money.format(ai))}
+        ${kpi("Маржа AI", compactMoney(marginAi), `план ${compactMoney(marginPlan)} · GAP ${compactMoney(Math.max(0, marginPlan - marginAi))}`, marginAi < marginPlan ? "is-danger" : "", money.format(marginAi))}
         ${kpi("Прогноз роли", compactMoney(human), `расхождение с AI ${compactMoney(human - ai)}`, human > ai * 1.12 ? "is-warning" : "", money.format(human))}
-        ${kpi("Надутый прогноз", inflated.length, "30%+ выше AI", inflated.length ? "is-danger" : "")}
+        ${kpi("Маржа роли", compactMoney(marginHuman), `расхождение с AI ${compactMoney(marginHuman - marginAi)}`, marginHuman > marginAi * 1.12 ? "is-warning" : "", money.format(marginHuman))}
       </section>
       ${renderForecastBridge(deals)}
       <section class="v2-summary">
@@ -1566,10 +1647,10 @@
           <strong>${transferDeals.length} ВС</strong>
           <small>${compactMoney(sum(transferDeals, (deal) => deal.amount))} pipeline требует переквалификации.</small>
         </article>
-        <article class="${noShipment.length ? "is-danger" : ""}">
-          <span>Факт не подтверждён</span>
-          <strong>${noShipment.length} закрытых ВС</strong>
-          <small>Нет связанной отгрузки 1С, прогноз мог быть завышен.</small>
+        <article class="${lowMarginDeals.length ? "is-danger" : ""}">
+          <span>Маржа под риском</span>
+          <strong>${lowMarginDeals.length} ВС</strong>
+          <small>${compactMoney(sum(lowMarginDeals, (deal) => deal.amount))} pipeline с маржей ниже 5%.</small>
         </article>
         <article class="${lateUpdates.length ? "is-danger" : ""}">
           <span>Поздние обновления</span>
@@ -1607,15 +1688,15 @@
     return `
       <section class="v2-grid">
         ${kpi("Закрытые ВС", closedDeals.length, "выиграны, проиграны, отменены")}
-        ${kpi("Реализованы в 1С", realized.length, `${compactMoney(sum(realized, (deal) => deal.shipmentAmount))} факт`, "", money.format(sum(realized, (deal) => deal.shipmentAmount)))}
-        ${kpi("Не реализованы", closedDeals.length - realized.length, "нет факта отгрузки", closedDeals.length - realized.length ? "is-warning" : "")}
+        ${kpi("Реализованы фактом", realized.length, `${compactMoney(sum(realized, (deal) => deal.shipmentAmount))} оборот`, "", money.format(sum(realized, (deal) => deal.shipmentAmount)))}
+        ${kpi("Факт маржи", compactMoney(factMarginAmount(closedDeals)), `средняя ${formatMarginPercent(averageMarginPercent(realized))}`, "", money.format(factMarginAmount(closedDeals)))}
         ${kpi("Потенциал реанимации", compactMoney(sum(revivalCandidates, (deal) => deal.revivalEffect)), `${revivalCandidates.length} ВС`, revivalCandidates.length ? "is-warning" : "")}
         ${kpi("Пилот / пресейл", `${pilotPresaleConversion(closedDeals)}%`, "конверсия в выигрыш")}
       </section>
       <section class="v2-two-col">
         <div class="v2-panel">
           <div class="v2-panel-head"><h2>Причины закрытия</h2><span>CRM поле</span></div>
-          ${table(["Причина","ВС","Сумма ВС","Факт 1С"], reasonRows.map((row) => [
+          ${table(["Причина","ВС","Сумма ВС","Факт"], reasonRows.map((row) => [
             row.key,
             row.count,
             compactMoney(row.amount),
@@ -1648,15 +1729,16 @@
       </section>
       <section class="v2-table-card">
         <div class="v2-panel-head"><h2>Закрытые ВС</h2><span>${closedDeals.length} в выборке</span></div>
-        ${table(["ID","Дата создания","Дата закрытия","Статус","Партнёр","Вендор","Менеджер","Сумма","Факт 1С","Причина","Пилот / пресейл"], closedDeals.sort((a, b) => (b.closedAt || "").localeCompare(a.closedAt || "")).map((deal) => [
+        ${table(["ID","Дата создания","Дата закрытия","Статус","Партнёр","Оборот","Маржа","Вендор","Менеджер","Факт","Причина","Пилот / пресейл"], closedDeals.sort((a, b) => (b.closedAt || "").localeCompare(a.closedAt || "")).map((deal) => [
           `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
           formatDate(deal.createdAt),
           formatDate(deal.closedAt),
           deal.status,
           deal.partner,
+          compactMoney(deal.amount),
+          `${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}`,
           deal.vendor,
           deal.sale,
-          compactMoney(deal.amount),
           deal.shipmentAmount ? compactMoney(deal.shipmentAmount) : "нет",
           deal.lossReason,
           deal.pilotPresale ? "да" : "нет"
@@ -1678,11 +1760,11 @@
         <div class="v2-panel-head"><h2>Все возможные сделки</h2><span>${rows.length} в выборке · клик открывает карточку</span></div>
         <div class="v2-table-wrap">
           <table class="v2-table">
-            <thead><tr><th>ID</th><th>Создана</th><th>Статус</th><th>Партнёр</th><th>Вендор</th><th>PAM</th><th>SDM</th><th>Sale</th><th>Макрорегион</th><th>Сумма</th><th>AI</th><th>В период</th><th>Прогноз роли</th><th>Доверие</th><th>Здоровье</th><th>Класс</th><th>Переносы</th><th>Активность</th><th>КП</th><th>Отгрузка 1С</th><th>Выгорание</th></tr></thead>
+            <thead><tr><th>ID</th><th>Статус / партнёр</th><th>Оборот</th><th>Маржа ₽</th><th>Маржа %</th><th>Вендор</th><th>PAM</th><th>SDM</th><th>Sale</th><th>Регион</th><th>AI</th><th>В период</th><th>Прогноз роли</th><th>Доверие</th><th>Здоровье</th><th>Класс</th><th>Переносы</th><th>Активность</th><th>КП</th><th>Выгорание</th></tr></thead>
             <tbody>${rows.map((deal) => {
               const confidence = forecastConfidence(deal);
               return `<tr class="v2-row-${deal.health}" data-open-deal="${deal.id}">
-              <td><strong>${deal.id}</strong></td><td>${formatDate(deal.createdAt)}</td><td>${deal.status}</td><td>${deal.partner}</td><td>${deal.vendor}</td><td>${deal.pam}</td><td>${deal.sdm}</td><td>${deal.sale}</td><td>${deal.region}</td><td class="v2-num">${money.format(deal.amount)}</td><td class="v2-num">${deal.probability}%</td><td class="v2-num">${deal.closeInPeriodProbability}%</td><td class="v2-num">${money.format(deal.managerForecast)}</td><td>${scorePill(confidence)}</td><td><span class="v2-badge ${deal.health}">${healthLabels[deal.health]}</span></td><td>${renderClassification(deal)}</td><td>${deal.transferCount}</td><td>${deal.lastActivityDays} дн.</td><td>${deal.cpExpired ? "Истёк" : deal.cpAgeDays ? `${deal.cpAgeDays} дн.` : "нет КП"}</td><td>${deal.shipmentAmount ? money.format(deal.shipmentAmount) : "нет"}</td><td><span class="v2-badge ${deal.burnoutRisk === "Высокий" ? "red" : deal.burnoutRisk === "Средний" ? "yellow" : "green"}">${deal.burnoutRisk}</span></td>
+              <td><strong>${deal.id}</strong><small>${formatDate(deal.createdAt)}</small></td><td><strong>${deal.status}</strong><small>${deal.partner}</small></td><td class="v2-num v2-strong-money">${money.format(deal.amount)}</td><td class="v2-num v2-strong-money">${money.format(deal.marginAmount || 0)}</td><td class="v2-num ${isLowMargin(deal) ? "v2-red-text" : "v2-green-text"}"><strong>${formatMarginPercent(deal)}</strong></td><td>${deal.vendor}</td><td>${deal.pam}</td><td>${deal.sdm}</td><td>${deal.sale}</td><td>${deal.region}</td><td class="v2-num">${deal.probability}%</td><td class="v2-num">${deal.closeInPeriodProbability}%</td><td class="v2-num">${money.format(deal.managerForecast)}</td><td>${scorePill(confidence)}</td><td><span class="v2-badge ${deal.health}">${healthLabels[deal.health]}</span></td><td>${renderClassification(deal)}</td><td>${deal.transferCount}</td><td>${deal.lastActivityDays} дн.</td><td>${deal.cpExpired ? "Истёк" : deal.cpAgeDays ? `${deal.cpAgeDays} дн.` : "нет КП"}</td><td><span class="v2-badge ${deal.burnoutRisk === "Высокий" ? "red" : deal.burnoutRisk === "Средний" ? "yellow" : "green"}">${deal.burnoutRisk}</span></td>
             </tr>`;
             }).join("")}</tbody>
           </table>
@@ -1701,7 +1783,7 @@
         <div>
           <span class="v2-kicker">${title} · детализация</span>
           <h2>${selectedObject.name}</h2>
-          <p>${objectDeals.length} ВС · ${money.format(sum(objectDeals, (deal) => deal.amount))} pipeline · ${money.format(sum(objectDeals, (deal) => deal.shipmentAmount))} факт 1С</p>
+          <p>${objectDeals.length} ВС · ${money.format(sum(objectDeals, (deal) => deal.amount))} pipeline · ${money.format(sum(objectDeals, (deal) => deal.marginAmount || 0))} маржа</p>
         </div>
         <button class="v2-button secondary" data-back-object>← Назад к дашборду</button>
       </div>
@@ -1731,10 +1813,11 @@
 
   function renderMiniDealsTable(deals) {
     const rows = [...deals].sort((a, b) => riskRank(b) - riskRank(a)).slice(0, 10);
-    return table(["ID","Статус","Сумма","AI","Здоровье","Активность"], rows.map((deal) => [
+    return table(["ID","Статус","Оборот","Маржа","AI","Здоровье","Активность"], rows.map((deal) => [
       `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
       deal.status,
       money.format(deal.amount),
+      `${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}`,
       `${deal.probability}%`,
       badge(healthLabels[deal.health], deal.health),
       `${deal.lastActivityDays} дн.`
@@ -1763,14 +1846,14 @@
           </div>
         </div>
         <section class="v2-grid">
+          ${kpi("Оборот ВС", money.format(deal.amount), `${deal.status} · ${deal.stage}`)}
+          ${kpi("Маржа ВС", money.format(deal.marginAmount || 0), `${formatMarginPercent(deal)} от оборота`, isLowMargin(deal) ? "is-danger" : "")}
           ${kpi("Вероятность", `${deal.probability}%`, healthLabels[deal.health], deal.health === "red" ? "is-danger" : "")}
           ${kpi("Закрытие в период", `${deal.closeInPeriodProbability}%`, "вероятность закрытия в текущем месяце/квартале", deal.closeInPeriodProbability < 35 && deal.status === "В работе" ? "is-warning" : "")}
           ${kpi("Риск переноса / срыва", `${deal.transferFailureRisk}%`, deal.transferFailureRisk >= 70 ? "высокий риск" : "управляемый риск", deal.transferFailureRisk >= 70 ? "is-danger" : deal.transferFailureRisk >= 45 ? "is-warning" : "")}
           ${kpi("Доверие к прогнозу", `${confidence}%`, confidenceMeta.label, confidenceMeta.color === "red" ? "is-danger" : confidenceMeta.color === "yellow" ? "is-warning" : "")}
-          ${kpi("Сумма ВС", money.format(deal.amount), `${deal.status} · ${deal.stage}`)}
-          ${kpi("Прогноз роли / AI", `${money.format(deal.managerForecast)} / ${money.format(deal.aiForecast)}`, `расхождение ${money.format(deal.managerForecast - deal.aiForecast)}`, isInflatedForecast(deal) ? "is-warning" : "")}
+          ${kpi("Прогноз роли / AI", `${money.format(deal.managerForecast)} / ${money.format(deal.aiForecast)}`, `маржа AI ${compactMoney(deal.aiForecast * marginPercent(deal) / 100)}`, isInflatedForecast(deal) ? "is-warning" : "")}
           ${kpi("Переносы", deal.transferCount, deal.transferCount >= 3 ? "нужна переквалификация" : "в пределах контроля", deal.transferCount >= 3 ? "is-danger" : "")}
-          ${kpi("Связь с 1С", deal.shipmentAmount ? money.format(deal.shipmentAmount) : "нет отгрузки", deal.lastShipmentDays ? `последняя ${deal.lastShipmentDays} дн.` : "факт не найден", !deal.shipmentAmount ? "is-danger" : "")}
           ${kpi("Дата создания", formatDate(deal.createdAt), deal.closedAt ? `закрыта ${formatDate(deal.closedAt)}` : "сделка открыта")}
         </section>
         <section class="v2-summary">
@@ -1814,7 +1897,7 @@
       ["Активность", deal.lastActivityDays > 21 ? "нет контакта больше 21 дня" : `${deal.lastActivityDays} дн. с последнего действия`, deal.lastActivityDays > 21 ? "red" : deal.lastActivityDays > 10 ? "yellow" : "green"],
       ["КП", deal.cpExpired ? `истёк срок КП: ${deal.cpAgeDays} дн.` : deal.cpAgeDays ? `КП актуально: ${deal.cpAgeDays} дн.` : "КП ещё не сформировано", deal.cpExpired ? "red" : "green"],
       ["Переносы", deal.transferCount ? `${deal.transferCount} переносов` : "переносов нет", deal.transferCount >= 3 ? "red" : deal.transferCount ? "yellow" : "green"],
-      ["1С", deal.shipmentAmount ? `отгрузка ${money.format(deal.shipmentAmount)}` : "отгрузка не найдена", deal.shipmentAmount ? "green" : "yellow"],
+      ["Маржа", `${money.format(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}`, isLowMargin(deal) ? "red" : "green"],
       ["Прогноз", `роль выше AI на ${money.format(deal.managerForecast - deal.aiForecast)}`, isInflatedForecast(deal) ? "red" : "green"]
     ];
     return `<div class="v2-score-explain">

@@ -5,7 +5,8 @@ window.V2_DEMO_DATA = {
     "currentQuarter": "2026-Q2",
     "year": "2026",
     "q4PlanShare": "50%",
-    "forecastRule": "Факт 1С + сумма открытых ВС × вероятность AI внутри выбранного периода"
+    "marginPlanRule": "План маржи = 9% от плана оборота",
+    "forecastRule": "Факт реализации + сумма открытых ВС × вероятность AI внутри выбранного периода"
   },
   "regions": [
     "Москва",
@@ -116,7 +117,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 52,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 470000,
+      "marginPercent": 5.1
     },
     {
       "id": "VSD-0002",
@@ -134,9 +137,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Системные переносы даты закрытия",
-        "Низкая конверсия партнёра"
+        "Низкая конверсия партнёра",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 4,
       "plannedMonth": "2026-07",
       "closeMonth": null,
@@ -172,7 +176,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 36,
       "burnoutRisk": "Высокий",
       "aiForecast": 36200000,
-      "managerForecast": 50700000
+      "managerForecast": 50700000,
+      "marginAmount": 5580000,
+      "marginPercent": 4.4
     },
     {
       "id": "VSD-0003",
@@ -217,7 +223,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 70,
       "burnoutRisk": "Высокий",
       "aiForecast": 15000000,
-      "managerForecast": 21000000
+      "managerForecast": 21000000,
+      "marginAmount": 4100000,
+      "marginPercent": 7.8
     },
     {
       "id": "VSD-0004",
@@ -257,7 +265,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 72,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 11140000,
+      "marginPercent": 7.4
     },
     {
       "id": "VSD-0005",
@@ -309,7 +319,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 57,
       "burnoutRisk": "Высокий",
       "aiForecast": 2200000,
-      "managerForecast": 3100000
+      "managerForecast": 3100000,
+      "marginAmount": 760000,
+      "marginPercent": 9.7
     },
     {
       "id": "VSD-0006",
@@ -355,7 +367,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 28,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 640000,
+      "marginPercent": 9.3
     },
     {
       "id": "VSD-0007",
@@ -398,7 +412,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 29,
       "burnoutRisk": "Высокий",
       "aiForecast": 194900000,
-      "managerForecast": 272800000
+      "managerForecast": 272800000,
+      "marginAmount": 67520000,
+      "marginPercent": 9.9
     },
     {
       "id": "VSD-0008",
@@ -440,7 +456,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 53,
       "burnoutRisk": "Высокий",
       "aiForecast": 38600000,
-      "managerForecast": 54000000
+      "managerForecast": 54000000,
+      "marginAmount": 16740000,
+      "marginPercent": 12.4
     },
     {
       "id": "VSD-0009",
@@ -457,9 +475,10 @@ window.V2_DEMO_DATA = {
       "probability": 29,
       "health": "red",
       "risks": [
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 1,
       "plannedMonth": "2026-07",
       "closeMonth": null,
@@ -480,7 +499,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 52,
       "burnoutRisk": "Высокий",
       "aiForecast": 6900000,
-      "managerForecast": 9700000
+      "managerForecast": 9700000,
+      "marginAmount": 1020000,
+      "marginPercent": 4.2
     },
     {
       "id": "VSD-0010",
@@ -526,7 +547,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 76,
       "burnoutRisk": "Высокий",
       "aiForecast": 6800000,
-      "managerForecast": 9500000
+      "managerForecast": 9500000,
+      "marginAmount": 1210000,
+      "marginPercent": 5.1
     },
     {
       "id": "VSD-0011",
@@ -545,9 +568,10 @@ window.V2_DEMO_DATA = {
       "risks": [
         "Истёк срок КП",
         "Нет активности по сделке",
-        "Нужна поддержка вендора"
+        "Нужна поддержка вендора",
+        "Низкая маржа"
       ],
-      "riskScore": 3,
+      "riskScore": 4,
       "transferCount": 1,
       "plannedMonth": "2026-09",
       "closeMonth": null,
@@ -568,7 +592,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 65,
       "burnoutRisk": "Высокий",
       "aiForecast": 33900000,
-      "managerForecast": 47400000
+      "managerForecast": 47400000,
+      "marginAmount": 5100000,
+      "marginPercent": 4.3
     },
     {
       "id": "VSD-0012",
@@ -603,7 +629,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 79,
       "burnoutRisk": "Высокий",
       "aiForecast": 18400000,
-      "managerForecast": 27600000
+      "managerForecast": 27600000,
+      "marginAmount": 10260000,
+      "marginPercent": 6.6
     },
     {
       "id": "VSD-0013",
@@ -643,7 +671,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 71,
       "burnoutRisk": "Высокий",
       "aiForecast": 41600000,
-      "managerForecast": 58300000
+      "managerForecast": 58300000,
+      "marginAmount": 10780000,
+      "marginPercent": 7.4
     },
     {
       "id": "VSD-0014",
@@ -683,7 +713,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 60,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 7950000,
+      "marginPercent": 8.2
     },
     {
       "id": "VSD-0015",
@@ -724,7 +756,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 68,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 1770000,
+      "marginPercent": 10.4
     },
     {
       "id": "VSD-0016",
@@ -771,7 +805,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 31,
       "burnoutRisk": "Высокий",
       "aiForecast": 18100000,
-      "managerForecast": 25300000
+      "managerForecast": 25300000,
+      "marginAmount": 7020000,
+      "marginPercent": 11.1
     },
     {
       "id": "VSD-0017",
@@ -790,9 +826,10 @@ window.V2_DEMO_DATA = {
       "risks": [
         "Системные переносы даты закрытия",
         "Истёк срок КП",
-        "Нет активности по сделке"
+        "Нет активности по сделке",
+        "Низкая маржа"
       ],
-      "riskScore": 3,
+      "riskScore": 4,
       "transferCount": 3,
       "plannedMonth": "2026-06",
       "closeMonth": "2026-06",
@@ -823,7 +860,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 66,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 50000,
+      "marginPercent": 3.6
     },
     {
       "id": "VSD-0018",
@@ -841,9 +880,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Системные переносы даты закрытия",
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 4,
       "plannedMonth": "2026-10",
       "closeMonth": null,
@@ -879,7 +919,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 57,
       "burnoutRisk": "Высокий",
       "aiForecast": 26600000,
-      "managerForecast": 37200000
+      "managerForecast": 37200000,
+      "marginAmount": 2050000,
+      "marginPercent": 2.2
     },
     {
       "id": "VSD-0019",
@@ -897,9 +939,10 @@ window.V2_DEMO_DATA = {
       "health": "green",
       "risks": [
         "Системные переносы даты закрытия",
-        "Нет активности по сделке"
+        "Нет активности по сделке",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 3,
       "plannedMonth": "2026-05",
       "closeMonth": "2026-05",
@@ -930,7 +973,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 44,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 1550000,
+      "marginPercent": 4.3
     },
     {
       "id": "VSD-0020",
@@ -949,9 +994,10 @@ window.V2_DEMO_DATA = {
       "risks": [
         "Системные переносы даты закрытия",
         "Истёк срок КП",
-        "Низкая конверсия партнёра"
+        "Низкая конверсия партнёра",
+        "Низкая маржа"
       ],
-      "riskScore": 3,
+      "riskScore": 4,
       "transferCount": 3,
       "plannedMonth": "2026-11",
       "closeMonth": null,
@@ -982,7 +1028,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 30,
       "burnoutRisk": "Высокий",
       "aiForecast": 2300000,
-      "managerForecast": 3300000
+      "managerForecast": 3300000,
+      "marginAmount": 370000,
+      "marginPercent": 4.5
     },
     {
       "id": "VSD-0021",
@@ -1033,7 +1081,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 76,
       "burnoutRisk": "Высокий",
       "aiForecast": 10600000,
-      "managerForecast": 13400000
+      "managerForecast": 13400000,
+      "marginAmount": 2000000,
+      "marginPercent": 7
     },
     {
       "id": "VSD-0022",
@@ -1050,9 +1100,10 @@ window.V2_DEMO_DATA = {
       "probability": 92,
       "health": "green",
       "risks": [
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 0,
       "plannedMonth": "2026-06",
       "closeMonth": "2026-06",
@@ -1067,7 +1118,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 60,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 750000,
+      "marginPercent": 4
     },
     {
       "id": "VSD-0023",
@@ -1102,7 +1155,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 75,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 1020000,
+      "marginPercent": 9.4
     },
     {
       "id": "VSD-0024",
@@ -1160,7 +1215,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 54,
       "burnoutRisk": "Высокий",
       "aiForecast": 57600000,
-      "managerForecast": 80600000
+      "managerForecast": 80600000,
+      "marginAmount": 19950000,
+      "marginPercent": 9.9
     },
     {
       "id": "VSD-0025",
@@ -1198,7 +1255,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 80,
       "burnoutRisk": "Средний",
       "aiForecast": 16800000,
-      "managerForecast": 21400000
+      "managerForecast": 21400000,
+      "marginAmount": 5530000,
+      "marginPercent": 12.2
     },
     {
       "id": "VSD-0026",
@@ -1232,7 +1291,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 78,
       "burnoutRisk": "Высокий",
       "aiForecast": 5600000,
-      "managerForecast": 8400000
+      "managerForecast": 8400000,
+      "marginAmount": 6430000,
+      "marginPercent": 13.6
     },
     {
       "id": "VSD-0027",
@@ -1250,9 +1311,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Системные переносы даты закрытия",
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 4,
       "plannedMonth": "2026-06",
       "closeMonth": null,
@@ -1288,7 +1350,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 78,
       "burnoutRisk": "Высокий",
       "aiForecast": 3800000,
-      "managerForecast": 5700000
+      "managerForecast": 5700000,
+      "marginAmount": 1080000,
+      "marginPercent": 3.4
     },
     {
       "id": "VSD-0028",
@@ -1328,7 +1392,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 72,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 2230000,
+      "marginPercent": 5.8
     },
     {
       "id": "VSD-0029",
@@ -1369,7 +1435,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 36,
       "burnoutRisk": "Высокий",
       "aiForecast": 4800000,
-      "managerForecast": 7300000
+      "managerForecast": 7300000,
+      "marginAmount": 2160000,
+      "marginPercent": 5.3
     },
     {
       "id": "VSD-0030",
@@ -1415,7 +1483,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 60,
       "burnoutRisk": "Высокий",
       "aiForecast": 13100000,
-      "managerForecast": 19600000
+      "managerForecast": 19600000,
+      "marginAmount": 7290000,
+      "marginPercent": 6.6
     },
     {
       "id": "VSD-0031",
@@ -1460,7 +1530,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 79,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 460000,
+      "marginPercent": 8.7
     },
     {
       "id": "VSD-0032",
@@ -1505,7 +1577,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 41,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 27070000,
+      "marginPercent": 8.2
     },
     {
       "id": "VSD-0033",
@@ -1524,9 +1598,10 @@ window.V2_DEMO_DATA = {
       "risks": [
         "Системные переносы даты закрытия",
         "Истёк срок КП",
-        "Низкая конверсия партнёра"
+        "Низкая конверсия партнёра",
+        "Низкая маржа"
       ],
-      "riskScore": 3,
+      "riskScore": 4,
       "transferCount": 4,
       "plannedMonth": "2026-12",
       "closeMonth": null,
@@ -1562,7 +1637,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 30,
       "burnoutRisk": "Высокий",
       "aiForecast": 177400000,
-      "managerForecast": 248300000
+      "managerForecast": 248300000,
+      "marginAmount": 22970000,
+      "marginPercent": 3.7
     },
     {
       "id": "VSD-0034",
@@ -1579,9 +1656,10 @@ window.V2_DEMO_DATA = {
       "probability": 28,
       "health": "red",
       "risks": [
-        "Системные переносы даты закрытия"
+        "Системные переносы даты закрытия",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 3,
       "plannedMonth": "2026-10",
       "closeMonth": null,
@@ -1612,7 +1690,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 78,
       "burnoutRisk": "Высокий",
       "aiForecast": 8200000,
-      "managerForecast": 11500000
+      "managerForecast": 11500000,
+      "marginAmount": 840000,
+      "marginPercent": 2.9
     },
     {
       "id": "VSD-0035",
@@ -1657,7 +1737,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 70,
       "burnoutRisk": "Высокий",
       "aiForecast": 102700000,
-      "managerForecast": 130400000
+      "managerForecast": 130400000,
+      "marginAmount": 34290000,
+      "marginPercent": 12.4
     },
     {
       "id": "VSD-0036",
@@ -1675,9 +1757,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Истёк срок КП",
-        "Нужна поддержка вендора"
+        "Нужна поддержка вендора",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 0,
       "plannedMonth": "2026-10",
       "closeMonth": null,
@@ -1692,7 +1775,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 50,
       "burnoutRisk": "Высокий",
       "aiForecast": 8900000,
-      "managerForecast": 12400000
+      "managerForecast": 12400000,
+      "marginAmount": 1300000,
+      "marginPercent": 4.2
     },
     {
       "id": "VSD-0037",
@@ -1708,8 +1793,10 @@ window.V2_DEMO_DATA = {
       "amount": 160900000,
       "probability": 12,
       "health": "red",
-      "risks": [],
-      "riskScore": 0,
+      "risks": [
+        "Низкая маржа"
+      ],
+      "riskScore": 1,
       "transferCount": 1,
       "plannedMonth": "2026-06",
       "closeMonth": null,
@@ -1728,9 +1815,11 @@ window.V2_DEMO_DATA = {
       "shipmentAmount": 0,
       "lastShipmentDays": null,
       "partnerConversion": 65,
-      "burnoutRisk": "Высокий",
+      "burnoutRisk": "Средний",
       "aiForecast": 19100000,
-      "managerForecast": 28600000
+      "managerForecast": 28600000,
+      "marginAmount": 6280000,
+      "marginPercent": 3.9
     },
     {
       "id": "VSD-0038",
@@ -1771,7 +1860,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 28,
       "burnoutRisk": "Высокий",
       "aiForecast": 13100000,
-      "managerForecast": 18300000
+      "managerForecast": 18300000,
+      "marginAmount": 2420000,
+      "marginPercent": 5.3
     },
     {
       "id": "VSD-0039",
@@ -1807,7 +1898,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 42,
       "burnoutRisk": "Высокий",
       "aiForecast": 79300000,
-      "managerForecast": 111000000
+      "managerForecast": 111000000,
+      "marginAmount": 18320000,
+      "marginPercent": 6.6
     },
     {
       "id": "VSD-0040",
@@ -1843,7 +1936,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 71,
       "burnoutRisk": "Высокий",
       "aiForecast": 4100000,
-      "managerForecast": 5800000
+      "managerForecast": 5800000,
+      "marginAmount": 1240000,
+      "marginPercent": 8.6
     },
     {
       "id": "VSD-0041",
@@ -1884,7 +1979,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 29,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 4020000,
+      "marginPercent": 7.9
     },
     {
       "id": "VSD-0042",
@@ -1936,7 +2033,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 76,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 44170000,
+      "marginPercent": 8.8
     },
     {
       "id": "VSD-0043",
@@ -1987,7 +2086,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 51,
       "burnoutRisk": "Высокий",
       "aiForecast": 29300000,
-      "managerForecast": 41100000
+      "managerForecast": 41100000,
+      "marginAmount": 10480000,
+      "marginPercent": 10.2
     },
     {
       "id": "VSD-0044",
@@ -2005,9 +2106,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Системные переносы даты закрытия",
-        "Нужна поддержка вендора"
+        "Нужна поддержка вендора",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 4,
       "plannedMonth": "2026-07",
       "closeMonth": null,
@@ -2043,7 +2145,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 59,
       "burnoutRisk": "Высокий",
       "aiForecast": 23600000,
-      "managerForecast": 33100000
+      "managerForecast": 33100000,
+      "marginAmount": 2810000,
+      "marginPercent": 3.4
     },
     {
       "id": "VSD-0045",
@@ -2061,9 +2165,10 @@ window.V2_DEMO_DATA = {
       "health": "green",
       "risks": [
         "Истёк срок КП",
-        "Нет активности по сделке"
+        "Нет активности по сделке",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 1,
       "plannedMonth": "2026-02",
       "closeMonth": "2026-02",
@@ -2084,7 +2189,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 65,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 3160000,
+      "marginPercent": 3
     },
     {
       "id": "VSD-0046",
@@ -2101,9 +2208,10 @@ window.V2_DEMO_DATA = {
       "probability": 29,
       "health": "red",
       "risks": [
-        "Низкая конверсия партнёра"
+        "Низкая конверсия партнёра",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 2,
       "plannedMonth": "2026-11",
       "closeMonth": null,
@@ -2129,7 +2237,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 28,
       "burnoutRisk": "Средний",
       "aiForecast": 20600000,
-      "managerForecast": 28800000
+      "managerForecast": 28800000,
+      "marginAmount": 2880000,
+      "marginPercent": 4
     },
     {
       "id": "VSD-0047",
@@ -2175,7 +2285,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 40,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 260000,
+      "marginPercent": 5.9
     },
     {
       "id": "VSD-0048",
@@ -2231,7 +2343,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 39,
       "burnoutRisk": "Высокий",
       "aiForecast": 27800000,
-      "managerForecast": 41700000
+      "managerForecast": 41700000,
+      "marginAmount": 13610000,
+      "marginPercent": 5.8
     },
     {
       "id": "VSD-0049",
@@ -2263,7 +2377,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 54,
       "burnoutRisk": "Низкий",
       "aiForecast": 106900000,
-      "managerForecast": 149600000
+      "managerForecast": 149600000,
+      "marginAmount": 27680000,
+      "marginPercent": 7.4
     },
     {
       "id": "VSD-0050",
@@ -2299,7 +2415,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 38,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 5960000,
+      "marginPercent": 9
     },
     {
       "id": "VSD-0051",
@@ -2316,9 +2434,10 @@ window.V2_DEMO_DATA = {
       "probability": 97,
       "health": "green",
       "risks": [
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 2,
       "plannedMonth": "2026-04",
       "closeMonth": "2026-04",
@@ -2344,7 +2463,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 80,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 5840000,
+      "marginPercent": 2.4
     },
     {
       "id": "VSD-0052",
@@ -2378,7 +2499,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 65,
       "burnoutRisk": "Высокий",
       "aiForecast": 17400000,
-      "managerForecast": 24300000
+      "managerForecast": 24300000,
+      "marginAmount": 7420000,
+      "marginPercent": 12.2
     },
     {
       "id": "VSD-0053",
@@ -2418,7 +2541,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 34,
       "burnoutRisk": "Средний",
       "aiForecast": 18400000,
-      "managerForecast": 25800000
+      "managerForecast": 25800000,
+      "marginAmount": 8060000,
+      "marginPercent": 12.5
     },
     {
       "id": "VSD-0054",
@@ -2435,9 +2560,10 @@ window.V2_DEMO_DATA = {
       "probability": 12,
       "health": "red",
       "risks": [
-        "Нет активности по сделке"
+        "Нет активности по сделке",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 0,
       "plannedMonth": "2026-06",
       "closeMonth": null,
@@ -2452,7 +2578,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 79,
       "burnoutRisk": "Высокий",
       "aiForecast": 3300000,
-      "managerForecast": 4900000
+      "managerForecast": 4900000,
+      "marginAmount": 1160000,
+      "marginPercent": 4.2
     },
     {
       "id": "VSD-0055",
@@ -2470,9 +2598,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Системные переносы даты закрытия",
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 3,
       "plannedMonth": "2026-12",
       "closeMonth": null,
@@ -2503,7 +2632,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 66,
       "burnoutRisk": "Высокий",
       "aiForecast": 48800000,
-      "managerForecast": 68300000
+      "managerForecast": 68300000,
+      "marginAmount": 7340000,
+      "marginPercent": 4.3
     },
     {
       "id": "VSD-0056",
@@ -2539,7 +2670,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 32,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 2110000,
+      "marginPercent": 5.3
     },
     {
       "id": "VSD-0057",
@@ -2590,7 +2723,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 58,
       "burnoutRisk": "Высокий",
       "aiForecast": 12000000,
-      "managerForecast": 15300000
+      "managerForecast": 15300000,
+      "marginAmount": 2270000,
+      "marginPercent": 7
     },
     {
       "id": "VSD-0058",
@@ -2628,7 +2763,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 61,
       "burnoutRisk": "Средний",
       "aiForecast": 117900000,
-      "managerForecast": 149600000
+      "managerForecast": 149600000,
+      "marginAmount": 23480000,
+      "marginPercent": 7.4
     },
     {
       "id": "VSD-0059",
@@ -2675,7 +2812,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 42,
       "burnoutRisk": "Высокий",
       "aiForecast": 26200000,
-      "managerForecast": 36700000
+      "managerForecast": 36700000,
+      "marginAmount": 7530000,
+      "marginPercent": 8.2
     },
     {
       "id": "VSD-0060",
@@ -2716,7 +2855,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 30,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 1920000,
+      "marginPercent": 9.3
     },
     {
       "id": "VSD-0061",
@@ -2754,7 +2895,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 64,
       "burnoutRisk": "Высокий",
       "aiForecast": 3300000,
-      "managerForecast": 5000000
+      "managerForecast": 5000000,
+      "marginAmount": 3400000,
+      "marginPercent": 12.2
     },
     {
       "id": "VSD-0062",
@@ -2790,7 +2933,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 63,
       "burnoutRisk": "Высокий",
       "aiForecast": 100400000,
-      "managerForecast": 140600000
+      "managerForecast": 140600000,
+      "marginAmount": 47440000,
+      "marginPercent": 13.5
     },
     {
       "id": "VSD-0063",
@@ -2808,9 +2953,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Системные переносы даты закрытия",
-        "Низкая конверсия партнёра"
+        "Низкая конверсия партнёра",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 3,
       "plannedMonth": "2026-06",
       "closeMonth": "2026-06",
@@ -2841,7 +2987,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 36,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 620000,
+      "marginPercent": 1.9
     },
     {
       "id": "VSD-0064",
@@ -2858,9 +3006,10 @@ window.V2_DEMO_DATA = {
       "probability": 25,
       "health": "red",
       "risks": [
-        "Нет активности по сделке"
+        "Нет активности по сделке",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 2,
       "plannedMonth": "2026-06",
       "closeMonth": "2026-06",
@@ -2886,7 +3035,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 77,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 320000,
+      "marginPercent": 4.7
     },
     {
       "id": "VSD-0065",
@@ -2926,7 +3077,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 55,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 3320000,
+      "marginPercent": 6.4
     },
     {
       "id": "VSD-0066",
@@ -2944,9 +3097,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Системные переносы даты закрытия",
-        "Низкая конверсия партнёра"
+        "Низкая конверсия партнёра",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 3,
       "plannedMonth": "2026-11",
       "closeMonth": null,
@@ -2977,7 +3131,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 36,
       "burnoutRisk": "Высокий",
       "aiForecast": 32000000,
-      "managerForecast": 44800000
+      "managerForecast": 44800000,
+      "marginAmount": 4480000,
+      "marginPercent": 4
     },
     {
       "id": "VSD-0067",
@@ -3023,7 +3179,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 31,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 1310000,
+      "marginPercent": 7.5
     },
     {
       "id": "VSD-0068",
@@ -3039,8 +3197,10 @@ window.V2_DEMO_DATA = {
       "amount": 9800000,
       "probability": 29,
       "health": "red",
-      "risks": [],
-      "riskScore": 0,
+      "risks": [
+        "Низкая маржа"
+      ],
+      "riskScore": 1,
       "transferCount": 0,
       "plannedMonth": "2026-08",
       "closeMonth": null,
@@ -3055,7 +3215,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 76,
       "burnoutRisk": "Средний",
       "aiForecast": 2800000,
-      "managerForecast": 3900000
+      "managerForecast": 3900000,
+      "marginAmount": 330000,
+      "marginPercent": 3.4
     },
     {
       "id": "VSD-0069",
@@ -3089,7 +3251,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 44,
       "burnoutRisk": "Высокий",
       "aiForecast": 21400000,
-      "managerForecast": 32200000
+      "managerForecast": 32200000,
+      "marginAmount": 17370000,
+      "marginPercent": 9.6
     },
     {
       "id": "VSD-0070",
@@ -3142,7 +3306,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 76,
       "burnoutRisk": "Высокий",
       "aiForecast": 36500000,
-      "managerForecast": 51100000
+      "managerForecast": 51100000,
+      "marginAmount": 13030000,
+      "marginPercent": 10.2
     },
     {
       "id": "VSD-0071",
@@ -3177,7 +3343,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 71,
       "burnoutRisk": "Высокий",
       "aiForecast": 3700000,
-      "managerForecast": 5200000
+      "managerForecast": 5200000,
+      "marginAmount": 1780000,
+      "marginPercent": 13.6
     },
     {
       "id": "VSD-0072",
@@ -3194,9 +3362,10 @@ window.V2_DEMO_DATA = {
       "probability": 29,
       "health": "red",
       "risks": [
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 2,
       "plannedMonth": "2026-10",
       "closeMonth": null,
@@ -3222,7 +3391,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 66,
       "burnoutRisk": "Высокий",
       "aiForecast": 2600000,
-      "managerForecast": 3600000
+      "managerForecast": 3600000,
+      "marginAmount": 380000,
+      "marginPercent": 4.2
     },
     {
       "id": "VSD-0073",
@@ -3240,9 +3411,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Истёк срок КП",
-        "Нет активности по сделке"
+        "Нет активности по сделке",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 1,
       "plannedMonth": "2026-01",
       "closeMonth": "2026-01",
@@ -3263,7 +3435,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 82,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 1800000,
+      "marginPercent": 4.7
     },
     {
       "id": "VSD-0074",
@@ -3308,7 +3482,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 67,
       "burnoutRisk": "Высокий",
       "aiForecast": 39400000,
-      "managerForecast": 59000000
+      "managerForecast": 59000000,
+      "marginAmount": 17270000,
+      "marginPercent": 5.2
     },
     {
       "id": "VSD-0075",
@@ -3349,7 +3525,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 28,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 710000,
+      "marginPercent": 6.7
     },
     {
       "id": "VSD-0076",
@@ -3389,7 +3567,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 56,
       "burnoutRisk": "Средний",
       "aiForecast": 20500000,
-      "managerForecast": 28600000
+      "managerForecast": 28600000,
+      "marginAmount": 6160000,
+      "marginPercent": 8.6
     },
     {
       "id": "VSD-0077",
@@ -3406,9 +3586,10 @@ window.V2_DEMO_DATA = {
       "probability": 29,
       "health": "red",
       "risks": [
-        "Не подтверждён бюджет"
+        "Не подтверждён бюджет",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 0,
       "plannedMonth": "2026-08",
       "closeMonth": null,
@@ -3421,9 +3602,11 @@ window.V2_DEMO_DATA = {
       "shipmentAmount": 0,
       "lastShipmentDays": null,
       "partnerConversion": 64,
-      "burnoutRisk": "Низкий",
+      "burnoutRisk": "Средний",
       "aiForecast": 66300000,
-      "managerForecast": 92800000
+      "managerForecast": 92800000,
+      "marginAmount": 8590000,
+      "marginPercent": 3.7
     },
     {
       "id": "VSD-0078",
@@ -3481,7 +3664,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 69,
       "burnoutRisk": "Высокий",
       "aiForecast": 41500000,
-      "managerForecast": 58100000
+      "managerForecast": 58100000,
+      "marginAmount": 12780000,
+      "marginPercent": 8.8
     },
     {
       "id": "VSD-0079",
@@ -3531,7 +3716,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 53,
       "burnoutRisk": "Высокий",
       "aiForecast": 11200000,
-      "managerForecast": 15700000
+      "managerForecast": 15700000,
+      "marginAmount": 4470000,
+      "marginPercent": 11.4
     },
     {
       "id": "VSD-0080",
@@ -3582,7 +3769,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 71,
       "burnoutRisk": "Высокий",
       "aiForecast": 20400000,
-      "managerForecast": 28600000
+      "managerForecast": 28600000,
+      "marginAmount": 9920000,
+      "marginPercent": 13.9
     },
     {
       "id": "VSD-0081",
@@ -3599,9 +3788,10 @@ window.V2_DEMO_DATA = {
       "probability": 28,
       "health": "red",
       "risks": [
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 1,
       "plannedMonth": "2026-09",
       "closeMonth": null,
@@ -3622,7 +3812,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 41,
       "burnoutRisk": "Высокий",
       "aiForecast": 4100000,
-      "managerForecast": 5800000
+      "managerForecast": 5800000,
+      "marginAmount": 600000,
+      "marginPercent": 4.2
     },
     {
       "id": "VSD-0082",
@@ -3656,7 +3848,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 57,
       "burnoutRisk": "Высокий",
       "aiForecast": 4900000,
-      "managerForecast": 6900000
+      "managerForecast": 6900000,
+      "marginAmount": 880000,
+      "marginPercent": 5.1
     },
     {
       "id": "VSD-0083",
@@ -3702,7 +3896,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 64,
       "burnoutRisk": "Высокий",
       "aiForecast": 4500000,
-      "managerForecast": 6300000
+      "managerForecast": 6300000,
+      "marginAmount": 1000000,
+      "marginPercent": 6.4
     },
     {
       "id": "VSD-0084",
@@ -3742,7 +3938,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 65,
       "burnoutRisk": "Средний",
       "aiForecast": 2600000,
-      "managerForecast": 3600000
+      "managerForecast": 3600000,
+      "marginAmount": 810000,
+      "marginPercent": 8.9
     },
     {
       "id": "VSD-0085",
@@ -3760,9 +3958,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Системные переносы даты закрытия",
-        "Истёк срок КП"
+        "Истёк срок КП",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 4,
       "plannedMonth": "2026-12",
       "closeMonth": null,
@@ -3798,7 +3997,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 81,
       "burnoutRisk": "Высокий",
       "aiForecast": 4900000,
-      "managerForecast": 6900000
+      "managerForecast": 6900000,
+      "marginAmount": 500000,
+      "marginPercent": 2.9
     },
     {
       "id": "VSD-0086",
@@ -3838,7 +4039,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 56,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 1310000,
+      "marginPercent": 9.4
     },
     {
       "id": "VSD-0087",
@@ -3891,7 +4094,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 52,
       "burnoutRisk": "Высокий",
       "aiForecast": 82000000,
-      "managerForecast": 114800000
+      "managerForecast": 114800000,
+      "marginAmount": 25260000,
+      "marginPercent": 8.8
     },
     {
       "id": "VSD-0088",
@@ -3907,8 +4112,10 @@ window.V2_DEMO_DATA = {
       "amount": 163000000,
       "probability": 29,
       "health": "red",
-      "risks": [],
-      "riskScore": 0,
+      "risks": [
+        "Низкая маржа"
+      ],
+      "riskScore": 1,
       "transferCount": 2,
       "plannedMonth": "2026-11",
       "closeMonth": null,
@@ -3934,7 +4141,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 49,
       "burnoutRisk": "Средний",
       "aiForecast": 46600000,
-      "managerForecast": 65200000
+      "managerForecast": 65200000,
+      "marginAmount": 5540000,
+      "marginPercent": 3.4
     },
     {
       "id": "VSD-0089",
@@ -3987,7 +4196,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 34,
       "burnoutRisk": "Высокий",
       "aiForecast": 25300000,
-      "managerForecast": 35400000
+      "managerForecast": 35400000,
+      "marginAmount": 9290000,
+      "marginPercent": 10.5
     },
     {
       "id": "VSD-0090",
@@ -4005,9 +4216,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Нет активности по сделке",
-        "Не подтверждён бюджет"
+        "Не подтверждён бюджет",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 1,
       "plannedMonth": "2026-02",
       "closeMonth": "2026-02",
@@ -4028,7 +4240,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 82,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 2290000,
+      "marginPercent": 2.6
     },
     {
       "id": "VSD-0091",
@@ -4046,9 +4260,10 @@ window.V2_DEMO_DATA = {
       "health": "red",
       "risks": [
         "Истёк срок КП",
-        "Нет активности по сделке"
+        "Нет активности по сделке",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 0,
       "plannedMonth": "2026-07",
       "closeMonth": "2026-07",
@@ -4063,7 +4278,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 65,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 240000,
+      "marginPercent": 4.6
     },
     {
       "id": "VSD-0092",
@@ -4081,9 +4298,10 @@ window.V2_DEMO_DATA = {
       "health": "green",
       "risks": [
         "Нет активности по сделке",
-        "Низкая конверсия партнёра"
+        "Низкая конверсия партнёра",
+        "Низкая маржа"
       ],
-      "riskScore": 2,
+      "riskScore": 3,
       "transferCount": 0,
       "plannedMonth": "2026-01",
       "closeMonth": "2026-01",
@@ -4098,7 +4316,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 35,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 68660000,
+      "marginPercent": 4.1
     },
     {
       "id": "VSD-0093",
@@ -4151,7 +4371,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 35,
       "burnoutRisk": "Высокий",
       "aiForecast": 82200000,
-      "managerForecast": 115100000
+      "managerForecast": 115100000,
+      "marginAmount": 13530000,
+      "marginPercent": 4.7
     },
     {
       "id": "VSD-0094",
@@ -4194,7 +4416,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 75,
       "burnoutRisk": "Средний",
       "aiForecast": 9700000,
-      "managerForecast": 13600000
+      "managerForecast": 13600000,
+      "marginAmount": 2920000,
+      "marginPercent": 8.6
     },
     {
       "id": "VSD-0095",
@@ -4228,7 +4452,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 69,
       "burnoutRisk": "Низкий",
       "aiForecast": 37800000,
-      "managerForecast": 53000000
+      "managerForecast": 53000000,
+      "marginAmount": 10860000,
+      "marginPercent": 8.2
     },
     {
       "id": "VSD-0096",
@@ -4263,7 +4489,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 35,
       "burnoutRisk": "Высокий",
       "aiForecast": 0,
-      "managerForecast": 0
+      "managerForecast": 0,
+      "marginAmount": 6690000,
+      "marginPercent": 8.1
     },
     {
       "id": "VSD-0097",
@@ -4316,7 +4544,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 53,
       "burnoutRisk": "Высокий",
       "aiForecast": 48800000,
-      "managerForecast": 68400000
+      "managerForecast": 68400000,
+      "marginAmount": 17430000,
+      "marginPercent": 10.2
     },
     {
       "id": "VSD-0098",
@@ -4368,7 +4598,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 37,
       "burnoutRisk": "Высокий",
       "aiForecast": 67600000,
-      "managerForecast": 94600000
+      "managerForecast": 94600000,
+      "marginAmount": 24840000,
+      "marginPercent": 10.5
     },
     {
       "id": "VSD-0099",
@@ -4411,7 +4643,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 30,
       "burnoutRisk": "Высокий",
       "aiForecast": 170900000,
-      "managerForecast": 239200000
+      "managerForecast": 239200000,
+      "marginAmount": 25710000,
+      "marginPercent": 4.3
     },
     {
       "id": "VSD-0100",
@@ -4428,9 +4662,10 @@ window.V2_DEMO_DATA = {
       "probability": 29,
       "health": "red",
       "risks": [
-        "Системные переносы даты закрытия"
+        "Системные переносы даты закрытия",
+        "Низкая маржа"
       ],
-      "riskScore": 1,
+      "riskScore": 2,
       "transferCount": 3,
       "plannedMonth": "2026-08",
       "closeMonth": null,
@@ -4461,7 +4696,9 @@ window.V2_DEMO_DATA = {
       "partnerConversion": 50,
       "burnoutRisk": "Высокий",
       "aiForecast": 7300000,
-      "managerForecast": 10200000
+      "managerForecast": 10200000,
+      "marginAmount": 1100000,
+      "marginPercent": 4.3
     }
   ],
   "plans": [

@@ -139,6 +139,19 @@ function burnoutFor(riskScore, lastActivityDays, cpExpired, transferCount) {
   return "Низкий";
 }
 
+function marginPercentFor(item, index) {
+  const base = [4.2, 5.1, 6.4, 7.8, 8.6, 9.4, 10.8, 12.2, 13.6][index % 9];
+  let value = base;
+  if (item.amount > 80_000_000) value -= 1.2;
+  if (item.status === "Проиграна" || item.status === "Отменена") value -= 0.4;
+  if (item.vendor === "Группа Астра" || item.vendor === "Positive Technologies" || item.vendor === "Kaspersky") value += 1.1;
+  if (item.partnerConversion < 38) value -= 1.1;
+  if (item.transferCount >= 3) value -= 0.8;
+  if (index % 17 === 0) value = 2.4 + (index % 3) * 0.5;
+  if (index % 11 === 0) value = 3.4 + (index % 4) * 0.3;
+  return Math.max(1.2, Math.min(14.5, Number(value.toFixed(1))));
+}
+
 function closeMonthFor(status, month) {
   if (status === "В работе") return null;
   return month;
@@ -275,6 +288,23 @@ calibrateOpen(["2026-04", "2026-05"], 700_000_000, 260_000_000, 330_000_000);
 calibrateWon(["2026-01", "2026-02", "2026-03"], 2_270_000_000);
 calibrateOpen(["2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"], 7_000_000_000, 2_000_000_000, 2_800_000_000);
 
+function applyMargins() {
+  deals.forEach((item, index) => {
+    const percent = marginPercentFor(item, index + 1);
+    item.marginAmount = roundTo(item.amount * percent / 100, 10_000);
+    item.marginPercent = Number((item.marginAmount / Math.max(item.amount, 1) * 100).toFixed(1));
+    if (item.marginPercent < 5 && !item.risks.includes("Низкая маржа")) {
+      item.risks.push("Низкая маржа");
+      item.risks = item.risks.slice(0, 4);
+      item.riskScore = Math.max(item.riskScore, item.risks.length);
+      item.health = healthFor(item.riskScore, item.probability, item.status);
+      item.burnoutRisk = burnoutFor(item.riskScore, item.lastActivityDays, item.cpExpired, item.transferCount);
+    }
+  });
+}
+
+applyMargins();
+
 const plans = [];
 sales.forEach((name, index) => {
   const monthPlan = salesMonthPlans[index];
@@ -305,7 +335,8 @@ const payload = {
     currentQuarter: "2026-Q2",
     year: "2026",
     q4PlanShare: "50%",
-    forecastRule: "Факт 1С + сумма открытых ВС × вероятность AI внутри выбранного периода"
+    marginPlanRule: "План маржи = 9% от плана оборота",
+    forecastRule: "Факт реализации + сумма открытых ВС × вероятность AI внутри выбранного периода"
   },
   regions,
   partners,
