@@ -17,6 +17,8 @@
     focusZone: "all",
     monthFocus: "all",
     stageFocus: "all",
+    salesScenario: "plan",
+    selectedManager: null,
     selectedObject: null,
     selectedDealId: null,
     tasks: loadTasks()
@@ -453,12 +455,14 @@
   }
 
   function renderRoleScreen(deals, baseDeals = deals) {
+    if (state.role === "salesLead" && state.selectedManager) return renderSalesManagerDetail(baseDeals, state.selectedManager);
     if (state.selectedObject) return renderObjectDetail(baseDeals, state.selectedObject);
     if (state.role === "dataQuality") return renderDataQualityScreen(baseDeals);
     if (state.role === "currentDeals") return renderCurrentDealsScreen(deals);
     if (state.role === "forecastAccuracy") return renderForecastAccuracyScreen(deals);
     if (state.role === "closedAnalysis") return renderClosedAnalysisScreen(deals);
     if (state.role === "allDeals") return renderAllDeals(deals);
+    if (state.role === "salesLead") return renderSalesLeadScreen(deals, baseDeals);
     return `
       ${renderKpis(deals)}
       ${renderExecutiveSummary(deals)}
@@ -535,6 +539,180 @@
         <strong>${topStage ? topStage.key : "Нет критичного фокуса"}</strong>
         <small>${topStage ? `${topStage.count} ВС на ${compactMoney(topStage.amount)}.` : "Срез выглядит управляемым."} ${noShipment} ВС без факта 1С.</small>
       </article>
+    </section>`;
+  }
+
+  function renderSalesLeadScreen(deals, baseDeals) {
+    return `
+      ${renderSalesMorningBrief(deals)}
+      ${renderSalesScenarioTabs()}
+      ${renderSalesScenarioContent(deals, baseDeals)}
+    `;
+  }
+
+  function renderSalesMorningBrief(deals) {
+    const plan = planForCurrentRole();
+    const fact = factAmount(deals);
+    const forecast = forecastAmount(deals);
+    const gap = Math.max(0, plan - forecast);
+    const riskDeals = highRiskDeals(deals);
+    const riskAmount = sum(riskDeals, (deal) => deal.amount);
+    const inflated = deals.filter(isInflatedForecast);
+    const weakManagers = salesManagerRows(deals).filter((row) => row.gap > 0 || row.riskAmount > 0).slice(0, 3);
+    return `<section class="v2-leader-brief">
+      <article class="${gap ? "is-danger" : ""}">
+        <span>Выполняем ли план?</span>
+        <strong>${gap ? `GAP ${compactMoney(gap)}` : "План закрывается"}</strong>
+        <small>Факт ${compactMoney(fact)} · AI-прогноз ${compactMoney(forecast)} · план ${compactMoney(plan)}</small>
+      </article>
+      <article class="${riskAmount ? "is-danger" : ""}">
+        <span>Что сорвёт период?</span>
+        <strong>${compactMoney(riskAmount)}</strong>
+        <small>${riskDeals.length} ВС с выгоранием, переносами, красным здоровьем или низким доверием.</small>
+      </article>
+      <article>
+        <span>Кому нужна помощь?</span>
+        <strong>${weakManagers[0]?.name || "Команда в норме"}</strong>
+        <small>${weakManagers.length ? weakManagers.map((row) => row.name).join(", ") : "Нет явного перегруза по рискам."}</small>
+      </article>
+      <article class="${inflated.length ? "is-danger" : ""}">
+        <span>Где прогноз завышен?</span>
+        <strong>${inflated.length} ВС</strong>
+        <small>${compactMoney(sum(inflated, (deal) => Math.max(0, deal.managerForecast - deal.aiForecast)))} превышения прогноза роли над AI.</small>
+      </article>
+    </section>`;
+  }
+
+  function renderSalesScenarioTabs() {
+    const tabs = [
+      ["plan", "Контроль плана"],
+      ["team", "Команда"],
+      ["risks", "Риски и выгорание"],
+      ["forecast", "Прогноз vs факт"],
+      ["meeting", "Планёрка"],
+      ["lost", "Проигранные"]
+    ];
+    return `<section class="v2-scenario-tabs" aria-label="Сценарии руководителя продаж">
+      ${tabs.map(([key, label]) => `<button class="${state.salesScenario === key ? "is-active" : ""}" data-sales-scenario="${key}">${label}</button>`).join("")}
+    </section>`;
+  }
+
+  function renderSalesScenarioContent(deals, baseDeals) {
+    if (state.salesScenario === "team") return renderSalesTeamScenario(deals);
+    if (state.salesScenario === "risks") return renderSalesRiskScenario(deals, baseDeals);
+    if (state.salesScenario === "forecast") return renderSalesForecastScenario(deals);
+    if (state.salesScenario === "meeting") return renderSalesMeetingScenario(deals);
+    if (state.salesScenario === "lost") return renderSalesLostScenario(deals);
+    return renderSalesPlanScenario(deals, baseDeals);
+  }
+
+  function renderSalesPlanScenario(deals, baseDeals) {
+    return `
+      ${renderKpis(deals)}
+      ${renderExecutiveSummary(deals)}
+      ${renderSalesCommandCenter(deals, baseDeals)}
+      ${renderTodayActions(deals)}
+    `;
+  }
+
+  function renderSalesTeamScenario(deals) {
+    return `<section class="v2-dashboard">
+      <div class="v2-panel">
+        <div class="v2-panel-head"><h2>Команда продаж</h2><span>клик по менеджеру открывает drill-down</span></div>
+        ${renderSalesTeamTable(deals)}
+      </div>
+      <aside class="v2-panel">
+        <div class="v2-panel-head"><h2>Где вмешаться</h2><span>AI-приоритет</span></div>
+        ${renderManagerInterventionList(deals)}
+      </aside>
+    </section>`;
+  }
+
+  function renderSalesRiskScenario(deals, baseDeals) {
+    const riskDeals = highRiskDeals(deals).slice(0, 14);
+    return `
+      ${renderProblemHeatmap(baseDeals)}
+      <section class="v2-table-card">
+        <div class="v2-panel-head"><h2>Top-risk сделки</h2><span>сначала сумма под риском</span></div>
+        ${table(["ID","Менеджер","Партнёр","Вендор","Сумма","Здоровье","Риск","Следующее действие"], riskDeals.map((deal) => [
+          `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
+          managerLink(deal.sale),
+          deal.partner,
+          deal.vendor,
+          compactMoney(deal.amount),
+          badge(healthLabels[deal.health], deal.health),
+          `${deal.burnoutRisk} · ${deal.transferCount} перен.`,
+          nextAction(deal)
+        ]))}
+      </section>`;
+  }
+
+  function renderSalesForecastScenario(deals) {
+    return renderForecastAccuracyScreen(deals);
+  }
+
+  function renderSalesMeetingScenario(deals) {
+    const rows = salesManagerRows(deals).filter((row) => row.gap > 0 || row.riskDeals || row.inflated).slice(0, 8);
+    return `<section class="v2-table-card v2-meeting-board">
+      <div class="v2-panel-head"><h2>Планёрка с командой</h2><span>менеджер → факт → GAP → что спросить</span></div>
+      ${table(["Менеджер","План","Факт","GAP","Сумма под риском","Красные ВС","Что спросить"], rows.map((row) => [
+        managerLink(row.name),
+        compactMoney(row.plan),
+        compactMoney(row.fact),
+        row.gap ? `<strong class="v2-red-text">${compactMoney(row.gap)}</strong>` : "закрыто",
+        compactMoney(row.riskAmount),
+        row.riskDeals,
+        row.meetingQuestion
+      ]))}
+    </section>
+    <section class="v2-action-board">
+      <div class="v2-panel-head"><h2>Повестка руководителя</h2><span>готово к встрече</span></div>
+      <div class="v2-action-list">
+        ${rows.slice(0, 4).map((row, index) => `<button class="v2-action-item ${row.riskAmount ? "red" : "yellow"}" data-open-manager="${encodeURIComponent(row.name)}">
+          <em>${index + 1}</em>
+          <span><strong>${row.name}</strong><small>${row.meetingQuestion}</small></span>
+          <b>${row.gap ? "GAP" : "Риски"}</b>
+        </button>`).join("") || `<div class="v2-empty">Нет явной повестки для планёрки.</div>`}
+      </div>
+    </section>`;
+  }
+
+  function renderSalesLostScenario(deals) {
+    const lost = deals.filter((deal) => deal.status === "Проиграна" || deal.status === "Отменена");
+    const reasonRows = groupBy(lost, (deal) => deal.lossReason)
+      .map(({key, rows}) => ({ key, count: rows.length, amount: sum(rows, (deal) => deal.amount), effect: sum(rows, (deal) => deal.revivalEffect) }))
+      .sort((a, b) => b.amount - a.amount);
+    const managerRows = groupBy(lost, (deal) => deal.sale)
+      .map(({key, rows}) => ({ key, count: rows.length, amount: sum(rows, (deal) => deal.amount), topReason: topGroup(rows, (deal) => deal.lossReason)?.key || "—" }))
+      .sort((a, b) => b.amount - a.amount);
+    return `<section class="v2-grid">
+      ${kpi("Проиграно / отменено", lost.length, "закрытые без выигрыша", lost.length ? "is-danger" : "")}
+      ${kpi("Сумма потерь", compactMoney(sum(lost, (deal) => deal.amount)), "pipeline закрыт без реализации", lost.length ? "is-danger" : "")}
+      ${kpi("Потенциал реанимации", compactMoney(sum(lost, (deal) => deal.revivalEffect)), "расчётный эффект AI", lost.length ? "is-warning" : "")}
+      ${kpi("Главная причина", reasonRows[0]?.key || "Нет данных", `${reasonRows[0]?.count || 0} ВС`)}
+    </section>
+    <section class="v2-two-col">
+      <div class="v2-panel">
+        <div class="v2-panel-head"><h2>Причины проигрыша</h2><span>сумма сначала</span></div>
+        ${table(["Причина","ВС","Сумма","Потенциал"], reasonRows.map((row) => [row.key, row.count, compactMoney(row.amount), compactMoney(row.effect)]))}
+      </div>
+      <div class="v2-panel">
+        <div class="v2-panel-head"><h2>Менеджеры и потери</h2><span>drill-down</span></div>
+        ${table(["Менеджер","ВС","Сумма","Частая причина"], managerRows.map((row) => [managerLink(row.key), row.count, compactMoney(row.amount), row.topReason]))}
+      </div>
+    </section>
+    <section class="v2-table-card">
+      <div class="v2-panel-head"><h2>Проигранные сделки для разбора</h2><span>клик открывает карточку</span></div>
+      ${table(["ID","Дата закрытия","Менеджер","Партнёр","Сумма","Причина","AI-гипотеза","Эффект"], lost.sort((a, b) => b.amount - a.amount).slice(0, 18).map((deal) => [
+        `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
+        formatDate(deal.closedAt),
+        managerLink(deal.sale),
+        deal.partner,
+        compactMoney(deal.amount),
+        deal.lossReason,
+        deal.revivalHypothesis,
+        compactMoney(deal.revivalEffect)
+      ]))}
     </section>`;
   }
 
@@ -786,16 +964,146 @@
     return [...map.entries()].map(([key, rows]) => ({ key, rows }));
   }
 
-  function renderSalesTeamTable(deals) {
-    const rows = groupBy(deals, (deal) => deal.sale).map(({key, rows}) => {
-      const plan = data.plans.find((plan) => plan.role === "Руководитель продаж" && plan.period === state.filters.period)?.plan / data.sales.length || 0;
+  function topGroup(items, keyFn) {
+    return groupBy(items, keyFn)
+      .map(({key, rows}) => ({ key, rows, count: rows.length, amount: sum(rows, (deal) => deal.amount || 0) }))
+      .sort((a, b) => b.count - a.count || b.amount - a.amount)[0];
+  }
+
+  function highRiskDeals(deals) {
+    return [...deals]
+      .filter((deal) => deal.status === "В работе" && (deal.health === "red" || deal.burnoutRisk === "Высокий" || deal.transferCount >= 3 || forecastConfidence(deal) < 45 || isInflatedForecast(deal)))
+      .sort((a, b) => b.amount - a.amount || riskRank(b) - riskRank(a));
+  }
+
+  function managerLink(name) {
+    return `<button class="v2-object-link" data-open-manager="${encodeURIComponent(name)}">${name}</button>`;
+  }
+
+  function salesManagerRows(deals) {
+    const teamPlan = data.plans.find((plan) => plan.role === "Руководитель продаж" && plan.period === state.filters.period)?.plan || 0;
+    const managerPlan = teamPlan / Math.max(data.sales.length, 1);
+    return groupBy(deals, (deal) => deal.sale).map(({key, rows}) => {
       const fact = factAmount(rows);
       const forecast = forecastAmount(rows);
-      return { name: key, plan, fact, forecast, red: rows.filter((deal) => deal.health === "red").length, transfers: sum(rows, (deal) => deal.transferCount), risk: sum(rows.filter((deal) => deal.health === "red"), (deal) => deal.amount) };
-    }).sort((a, b) => b.risk - a.risk);
-    return table(["Сотрудник","План","Факт","Прогноз","Вып.","Красные","Переносы","Сумма под риском"], rows.map((row) => [
-      row.name, money.format(row.plan), money.format(row.fact), money.format(row.forecast), `${Math.round(row.fact / Math.max(row.plan, 1) * 100)}%`, row.red, row.transfers, money.format(row.risk)
+      const riskRows = highRiskDeals(rows);
+      const inflated = rows.filter(isInflatedForecast);
+      const lost = rows.filter((deal) => deal.status === "Проиграна" || deal.status === "Отменена");
+      const gap = Math.max(0, managerPlan - forecast);
+      return {
+        name: key,
+        rows,
+        plan: managerPlan,
+        fact,
+        forecast,
+        gap,
+        completion: Math.round(fact / Math.max(managerPlan, 1) * 100),
+        red: rows.filter((deal) => deal.health === "red").length,
+        transfers: sum(rows, (deal) => deal.transferCount),
+        riskDeals: riskRows.length,
+        riskAmount: sum(riskRows, (deal) => deal.amount),
+        inflated: inflated.length,
+        inflatedAmount: sum(inflated, (deal) => Math.max(0, deal.managerForecast - deal.aiForecast)),
+        lost: lost.length,
+        lostAmount: sum(lost, (deal) => deal.amount),
+        meetingQuestion: managerMeetingQuestion(rows, gap, riskRows, inflated, lost)
+      };
+    }).sort((a, b) => b.riskAmount - a.riskAmount || b.gap - a.gap || b.inflatedAmount - a.inflatedAmount);
+  }
+
+  function managerMeetingQuestion(rows, gap, riskRows, inflated, lost) {
+    if (gap > 0) return `Как закрываем GAP ${compactMoney(gap)} и какие 2 сделки реально подтянуть до конца периода?`;
+    if (riskRows.length) return `Что делаем с ${riskRows.length} рисковыми ВС на ${compactMoney(sum(riskRows, (deal) => deal.amount))}?`;
+    if (inflated.length) return `Почему прогноз выше AI по ${inflated.length} ВС и что подтверждает вероятность?`;
+    if (lost.length) return `Какая повторяющаяся причина потерь и что меняем в работе с партнёрами?`;
+    return "Какие сделки ускоряем и где нужна помощь руководителя?";
+  }
+
+  function renderSalesTeamTable(deals) {
+    const rows = salesManagerRows(deals);
+    return table(["Сотрудник","План","Факт","AI-прогноз","GAP","Вып.","Риск, ₽","Красные","Надутый прогноз","Проигр."], rows.map((row) => [
+      managerLink(row.name),
+      compactMoney(row.plan),
+      compactMoney(row.fact),
+      compactMoney(row.forecast),
+      row.gap ? `<strong class="v2-red-text">${compactMoney(row.gap)}</strong>` : "закрыто",
+      `${row.completion}%`,
+      compactMoney(row.riskAmount),
+      row.red,
+      row.inflated,
+      row.lost
     ]));
+  }
+
+  function renderManagerInterventionList(deals) {
+    const rows = salesManagerRows(deals).slice(0, 6);
+    return `<div class="v2-list">${rows.map((row) => `<button class="v2-list-item" data-open-manager="${encodeURIComponent(row.name)}">
+      <span><strong>${row.name}</strong><span>${row.meetingQuestion}</span></span>
+      <em class="v2-badge ${row.riskAmount || row.gap ? "red" : "green"}">${row.riskAmount ? compactMoney(row.riskAmount) : `${row.completion}%`}</em>
+    </button>`).join("") || `<div class="v2-empty">Нет менеджеров с явными рисками.</div>`}</div>`;
+  }
+
+  function renderSalesManagerDetail(deals, managerName) {
+    const managerDeals = deals.filter((deal) => deal.sale === managerName);
+    const row = salesManagerRows(deals).find((item) => item.name === managerName) || salesManagerRows(managerDeals)[0];
+    const riskDeals = highRiskDeals(managerDeals).slice(0, 10);
+    const lostDeals = managerDeals.filter((deal) => deal.status === "Проиграна" || deal.status === "Отменена").sort((a, b) => b.amount - a.amount).slice(0, 8);
+    return `<section class="v2-object-detail">
+      <div class="v2-detail-head">
+        <div>
+          <span class="v2-kicker">Руководитель продаж · drill-down менеджера</span>
+          <h2>${managerName}</h2>
+          <p>${managerDeals.length} ВС · ${compactMoney(sum(managerDeals, (deal) => deal.amount))} pipeline · ${row ? row.meetingQuestion : "контроль портфеля"}</p>
+        </div>
+        <button class="v2-button secondary" data-back-manager>← Назад к руководителю</button>
+      </div>
+      <section class="v2-grid">
+        ${kpi("План", compactMoney(row?.plan || 0), periodLabel())}
+        ${kpi("Факт", compactMoney(row?.fact || 0), `${row?.completion || 0}% выполнения`)}
+        ${kpi("AI-прогноз", compactMoney(row?.forecast || 0), row?.gap ? `GAP ${compactMoney(row.gap)}` : "прогноз закрывает план", row?.gap ? "is-warning" : "")}
+        ${kpi("Сумма под риском", compactMoney(row?.riskAmount || 0), `${row?.riskDeals || 0} ВС`, row?.riskAmount ? "is-danger" : "")}
+        ${kpi("Надутый прогноз", row?.inflated || 0, compactMoney(row?.inflatedAmount || 0), row?.inflated ? "is-warning" : "")}
+      </section>
+      <section class="v2-summary">
+        <article class="${row?.gap ? "is-danger" : ""}">
+          <span>Вопрос на планёрку</span>
+          <strong>${row?.gap ? "Закрытие GAP" : "Контроль рисков"}</strong>
+          <small>${row?.meetingQuestion || "Уточнить статус ключевых сделок."}</small>
+        </article>
+        <article>
+          <span>Где смотреть первым</span>
+          <strong>${riskDeals[0]?.id || "Нет критичного фокуса"}</strong>
+          <small>${riskDeals[0] ? `${riskDeals[0].partner} · ${compactMoney(riskDeals[0].amount)} · ${nextAction(riskDeals[0])}` : "Портфель выглядит управляемым."}</small>
+        </article>
+        <article class="${lostDeals.length ? "is-danger" : ""}">
+          <span>Проигранные</span>
+          <strong>${lostDeals.length} ВС</strong>
+          <small>${lostDeals[0] ? `Главная причина: ${topGroup(lostDeals, (deal) => deal.lossReason)?.key}.` : "Нет потерь в срезе."}</small>
+        </article>
+      </section>
+      <section class="v2-two-col">
+        <div class="v2-panel">
+          <div class="v2-panel-head"><h2>Рисковые сделки менеджера</h2><span>клик открывает карточку</span></div>
+          ${table(["ID","Партнёр","Сумма","AI","Риск","Действие"], riskDeals.map((deal) => [
+            `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
+            deal.partner,
+            compactMoney(deal.amount),
+            `${deal.probability}%`,
+            renderClassification(deal),
+            nextAction(deal)
+          ]))}
+        </div>
+        <div class="v2-panel">
+          <div class="v2-panel-head"><h2>Проигранные сделки</h2><span>разбор причин</span></div>
+          ${table(["ID","Сумма","Причина","Эффект"], lostDeals.map((deal) => [
+            `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
+            compactMoney(deal.amount),
+            deal.lossReason,
+            compactMoney(deal.revivalEffect)
+          ]))}
+        </div>
+      </section>
+    </section>`;
   }
 
   function renderPartnerTable(deals) {
@@ -1599,6 +1907,7 @@
         state.role = button.dataset.v2Role;
         state.selectedDealId = null;
         state.selectedObject = null;
+        state.selectedManager = null;
         state.focusZone = "all";
         state.monthFocus = "all";
         state.stageFocus = "all";
@@ -1611,6 +1920,7 @@
         state.filters[input.dataset.filter] = input.value;
         state.selectedDealId = null;
         state.selectedObject = null;
+        state.selectedManager = null;
         state.focusZone = "all";
         state.monthFocus = "all";
         state.stageFocus = "all";
@@ -1624,6 +1934,7 @@
         state.stageFocus = "all";
         state.selectedDealId = null;
         state.selectedObject = null;
+        state.selectedManager = null;
         render();
       });
     });
@@ -1634,7 +1945,17 @@
       state.stageFocus = "all";
       state.selectedDealId = null;
       state.selectedObject = null;
+      state.selectedManager = null;
       render();
+    });
+    document.querySelectorAll("[data-sales-scenario]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.salesScenario = button.dataset.salesScenario;
+        state.selectedDealId = null;
+        state.selectedObject = null;
+        state.selectedManager = null;
+        render();
+      });
     });
     document.querySelectorAll("[data-focus-zone]").forEach((button) => {
       button.addEventListener("click", () => {
@@ -1647,6 +1968,7 @@
         state.stageFocus = "all";
         state.selectedDealId = null;
         state.selectedObject = null;
+        state.selectedManager = null;
         render();
       });
     });
@@ -1654,6 +1976,7 @@
       row.addEventListener("click", () => {
         state.selectedDealId = row.dataset.openDeal;
         state.selectedObject = null;
+        state.selectedManager = null;
         render();
         requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
       });
@@ -1667,6 +1990,7 @@
         state.filters[button.dataset.quickFilter] = button.dataset.quickValue;
         state.selectedDealId = null;
         state.selectedObject = null;
+        state.selectedManager = null;
         state.monthFocus = "all";
         state.stageFocus = "all";
         render();
@@ -1678,6 +2002,7 @@
         state.filters[button.dataset.heatmapFilter] = decodeURIComponent(button.dataset.heatmapValue);
         state.selectedDealId = null;
         state.selectedObject = null;
+        state.selectedManager = null;
         render();
       });
     });
@@ -1686,9 +2011,24 @@
         event.stopPropagation();
         state.selectedObject = { type: button.dataset.openObject, name: decodeURIComponent(button.dataset.objectName) };
         state.selectedDealId = null;
+        state.selectedManager = null;
         render();
         requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
       });
+    });
+    document.querySelectorAll("[data-open-manager]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        state.selectedManager = decodeURIComponent(button.dataset.openManager);
+        state.selectedDealId = null;
+        state.selectedObject = null;
+        render();
+        requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
+      });
+    });
+    document.querySelector("[data-back-manager]")?.addEventListener("click", () => {
+      state.selectedManager = null;
+      render();
     });
     document.querySelector("[data-back-object]")?.addEventListener("click", () => {
       state.selectedObject = null;
@@ -1700,12 +2040,14 @@
       state.stageFocus = "all";
       state.selectedObject = null;
       state.selectedDealId = null;
+      state.selectedManager = null;
       render();
     });
     document.querySelectorAll("[data-trend-month]").forEach((button) => {
       button.addEventListener("click", () => {
         state.selectedObject = null;
         state.selectedDealId = null;
+        state.selectedManager = null;
         state.monthFocus = state.monthFocus === button.dataset.trendMonth ? "all" : button.dataset.trendMonth;
         render();
       });
@@ -1714,6 +2056,7 @@
       button.addEventListener("click", () => {
         state.selectedObject = null;
         state.selectedDealId = null;
+        state.selectedManager = null;
         state.stageFocus = state.stageFocus === button.dataset.stagePick ? "all" : button.dataset.stagePick;
         render();
       });
