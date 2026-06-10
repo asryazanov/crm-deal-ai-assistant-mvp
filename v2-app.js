@@ -85,6 +85,11 @@
   const money = new Intl.NumberFormat("ru-RU", { style: "currency", currency: "RUB", maximumFractionDigits: 0 });
   const number = new Intl.NumberFormat("ru-RU");
   const pilotData = createPilotData(data);
+  const periodMonths = {
+    month: ["2026-06"],
+    quarter: ["2026-04", "2026-05", "2026-06"],
+    year: ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"]
+  };
 
   function compactMoney(value) {
     if (Math.abs(value) >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(value >= 10_000_000_000 ? 0 : 1)} млрд ₽`;
@@ -159,7 +164,7 @@
       lossReason,
       closeReason: lossReason,
       pilotPresale,
-      managerForecast: deal.managerForecast || Math.round(deal.amount * (deal.probability + 8) / 100),
+      managerForecast: deal.managerForecast ?? Math.round(deal.amount * (deal.probability + 8) / 100),
       closeInPeriodProbability: closeInPeriodProbability(deal),
       transferFailureRisk: transferFailureRisk(deal),
       revivalHypothesis: revival.hypothesis,
@@ -209,6 +214,7 @@
       if (state.filters.status !== "all" && deal.status !== state.filters.status) return false;
       if (state.filters.health !== "all" && deal.health !== state.filters.health) return false;
       if (state.filters.amount !== "all" && !amountMatch(deal.amount, state.filters.amount)) return false;
+      if (!periodMatch(deal)) return false;
       if (state.filters.employee !== "all") {
         const field = roleToPersonField[state.role] || "sale";
         if (deal[field] !== state.filters.employee) return false;
@@ -235,6 +241,12 @@
     }[bucket] || false;
   }
 
+  function periodMatch(deal) {
+    const months = periodMonths[state.filters.period] || periodMonths.month;
+    const month = deal.status === "Выиграна" ? (deal.closeMonth || deal.plannedMonth) : deal.plannedMonth;
+    return months.includes(month);
+  }
+
   function sum(items, selector) {
     return items.reduce((acc, item) => acc + selector(item), 0);
   }
@@ -251,6 +263,10 @@
     const plans = data.plans.filter((plan) => plan.role === planRole && plan.period === state.filters.period);
     if (person) return plans.find((plan) => plan.name === person)?.plan || sum(plans, (plan) => plan.plan);
     return sum(plans, (plan) => plan.plan);
+  }
+
+  function planForPerson(role, name) {
+    return data.plans.find((plan) => plan.role === role && plan.name === name && plan.period === state.filters.period)?.plan || 0;
   }
 
   function factAmount(deals) {
@@ -361,6 +377,7 @@
   }
 
   function periodLabel() {
+    if (state.filters.period === "year") return "год";
     return state.filters.period === "quarter" ? "квартал" : "месяц";
   }
 
@@ -392,7 +409,7 @@
           ${Object.entries(roles).map(([key, role]) => `<button class="v2-role-tab ${state.role === key ? "is-active" : ""}" data-v2-role="${key}">${role.label}</button>`).join("")}
         </div>
         <div class="v2-filter-row">
-          ${selectField("period", "Период", [["month", "Месяц"], ["quarter", "Квартал"]])}
+          ${selectField("period", "Период", [["month", "Месяц"], ["quarter", "Квартал"], ["year", "Год"]])}
           ${selectField("region", "Макрорегион", [["all", "Все"], ...data.regions.map((value) => [value, value])])}
           ${selectField("employee", "Сотрудник", [["all", "Все"], ...employeeOptions().map((value) => [value, value])])}
           ${selectField("partner", "Партнёр", [["all", "Все"], ...data.partners.map((value) => [value, value])])}
@@ -981,9 +998,8 @@
   }
 
   function salesManagerRows(deals) {
-    const teamPlan = data.plans.find((plan) => plan.role === "Руководитель продаж" && plan.period === state.filters.period)?.plan || 0;
-    const managerPlan = teamPlan / Math.max(data.sales.length, 1);
     return groupBy(deals, (deal) => deal.sale).map(({key, rows}) => {
+      const managerPlan = planForPerson("Руководитель продаж", key);
       const fact = factAmount(rows);
       const forecast = forecastAmount(rows);
       const riskRows = highRiskDeals(rows);
