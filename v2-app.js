@@ -1132,16 +1132,16 @@
     const riskDeals = highRiskDeals(managerDeals).slice(0, 10);
     const lowMarginDeals = managerDeals.filter(isLowMargin).sort((a, b) => marginPercent(a) - marginPercent(b) || b.amount - a.amount).slice(0, 8);
     const lostDeals = managerDeals.filter((deal) => deal.status === "Проиграна" || deal.status === "Отменена").sort((a, b) => b.amount - a.amount).slice(0, 8);
-    return `<section class="v2-object-detail">
+    return `<section class="v2-object-detail v2-manager-detail">
       <div class="v2-detail-head">
         <div>
           <span class="v2-kicker">Руководитель продаж · drill-down менеджера</span>
           <h2>${managerName}</h2>
-          <p>${managerDeals.length} ВС · ${compactMoney(sum(managerDeals, (deal) => deal.amount))} pipeline · ${row ? row.meetingQuestion : "контроль портфеля"}</p>
+          <p title="${row ? row.meetingQuestion : "контроль портфеля"}">${managerDeals.length} ВС · ${compactMoney(sum(managerDeals, (deal) => deal.amount))} pipeline · ${row ? row.meetingQuestion : "контроль портфеля"}</p>
         </div>
         <button class="v2-button secondary" data-back-manager>← Назад к руководителю</button>
       </div>
-      <section class="v2-grid">
+      <section class="v2-grid v2-manager-kpi-grid">
         ${kpi("Оборот: план", compactMoney(row?.plan || 0), periodLabel())}
         ${kpi("Оборот: факт", compactMoney(row?.fact || 0), `${row?.completion || 0}% выполнения`)}
         ${kpi("Оборот: AI / GAP", compactMoney(row?.forecast || 0), row?.gap ? `GAP ${compactMoney(row.gap)}` : "прогноз закрывает план", row?.gap ? "is-warning" : "")}
@@ -1151,7 +1151,7 @@
         ${kpi("Сумма под риском", compactMoney(row?.riskAmount || 0), `${row?.riskDeals || 0} ВС`, row?.riskAmount ? "is-danger" : "")}
         ${kpi("Низкая маржа", row?.lowMargin || 0, compactMoney(row?.lowMarginAmount || 0), row?.lowMargin ? "is-danger" : "")}
       </section>
-      <section class="v2-summary">
+      <section class="v2-summary v2-manager-summary">
         <article class="${row?.gap ? "is-danger" : ""}">
           <span>Вопрос на планёрку</span>
           <strong>${row?.gap ? "Закрытие GAP" : "Контроль рисков"}</strong>
@@ -1171,24 +1171,20 @@
       <section class="v2-two-col">
         <div class="v2-panel">
           <div class="v2-panel-head"><h2>Рисковые сделки менеджера</h2><span>клик открывает карточку</span></div>
-          ${table(["ID","Партнёр","Оборот","Маржа","AI","Риск","Действие"], riskDeals.map((deal) => [
+          ${table(["ID","Сделка","Оборот / маржа","AI","Риск и действие"], riskDeals.map((deal) => [
             `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
-            deal.partner,
-            compactMoney(deal.amount),
-            `${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}`,
+            `<strong>${deal.partner}</strong><small>${deal.vendor}</small>`,
+            `${compactMoney(deal.amount)}<small>${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}</small>`,
             `${deal.probability}%`,
-            renderClassification(deal),
-            nextAction(deal)
+            `${renderClassification(deal)}<small>${nextAction(deal)}</small>`
           ]))}
         </div>
         <div class="v2-panel">
           <div class="v2-panel-head"><h2>Сделки с низкой маржей</h2><span>${lowMarginDeals.length}</span></div>
-          ${table(["ID","Статус","Партнёр","Оборот","Маржа","Действие"], lowMarginDeals.map((deal) => [
+          ${table(["ID","Сделка","Оборот / маржа","Действие"], lowMarginDeals.map((deal) => [
             `<button class="v2-object-link" data-open-deal="${deal.id}">${deal.id}</button>`,
-            deal.status,
-            deal.partner,
-            compactMoney(deal.amount),
-            `<strong class="v2-red-text">${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}</strong>`,
+            `<strong>${deal.partner}</strong><small>${deal.status} · ${deal.vendor}</small>`,
+            `${compactMoney(deal.amount)}<small><strong class="v2-red-text">${compactMoney(deal.marginAmount || 0)} · ${formatMarginPercent(deal)}</strong></small>`,
             nextAction(deal)
           ]))}
         </div>

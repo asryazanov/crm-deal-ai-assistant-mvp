@@ -1305,6 +1305,62 @@
 .v2-detail-head p {
   margin: 8px 0 0;
   color: var(--color-muted);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.v2-manager-detail {
+  overflow: hidden;
+}
+
+.v2-manager-kpi-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.v2-manager-kpi-grid .v2-card {
+  padding: 14px;
+}
+
+.v2-manager-kpi-grid .v2-card strong {
+  font-size: clamp(21px, 2.1vw, 28px);
+}
+
+.v2-manager-summary {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.v2-manager-summary article:last-child {
+  grid-column: 1 / -1;
+}
+
+.v2-manager-detail .v2-table {
+  table-layout: fixed;
+}
+
+.v2-manager-detail .v2-table th,
+.v2-manager-detail .v2-table td {
+  font-size: 10.5px;
+  padding: 8px;
+}
+
+.v2-manager-detail .v2-table td strong {
+  display: block;
+  min-width: 0;
+}
+
+.v2-manager-detail .v2-class-tags {
+  max-width: 100%;
+}
+
+.v2-manager-detail .v2-badge {
+  min-height: 24px;
+  padding: 4px 7px;
+  font-size: 10.5px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
 }
 
 .v2-actions {
