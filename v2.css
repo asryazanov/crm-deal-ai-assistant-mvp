@@ -125,11 +125,34 @@
   font-weight: 850;
 }
 
+.v2-preset-row button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.v2-preset-row button em {
+  min-width: 22px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-navy);
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1;
+  padding: 4px 6px;
+  text-align: center;
+}
+
 .v2-preset-row button:hover,
 .v2-preset-row button.is-active,
 .v2-mini-button:hover {
   border-color: var(--color-primary);
   background: var(--color-teal-soft);
+  color: var(--color-primary);
+}
+
+.v2-preset-row button.is-active em {
+  background: #fff;
   color: var(--color-primary);
 }
 

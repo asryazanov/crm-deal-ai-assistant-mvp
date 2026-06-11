@@ -224,12 +224,13 @@
   }
 
   function focusMatch(deal, zone) {
-    return {
+    const matches = {
       transfers: deal.transferCount >= 3,
       lowMargin: isLowMargin(deal),
       burnout: deal.burnoutRisk === "Высокий" || deal.cpExpired || deal.lastActivityDays > 21,
       lowConfidence: forecastConfidence(deal) < 45
-    }[zone] || true;
+    };
+    return zone in matches ? matches[zone] : true;
   }
 
   function amountMatch(value, bucket) {
@@ -424,6 +425,9 @@
     const root = appRoot();
     const baseDeals = baseFilteredDeals();
     const deals = filteredDeals();
+    root.dataset.focusZone = state.focusZone;
+    root.dataset.baseCount = String(baseDeals.length);
+    root.dataset.filteredCount = String(deals.length);
     root.innerHTML = `
       <section class="v2-shell">
         ${renderTopbar(deals)}
@@ -464,6 +468,7 @@
   }
 
   function renderPresetRow() {
+    const baseDeals = baseFilteredDeals();
     const presets = [
       ["burnout", "Выгорание"],
       ["transfers", "3+ переноса"],
@@ -472,7 +477,10 @@
     ];
     return `<div class="v2-preset-row">
       <span>Быстрые сценарии</span>
-      ${presets.map(([key, label]) => `<button class="${state.focusZone === key ? "is-active" : ""}" data-preset="${key}">${label}</button>`).join("")}
+      ${presets.map(([key, label]) => {
+        const count = baseDeals.filter((deal) => focusMatch(deal, key)).length;
+        return `<button class="${state.focusZone === key ? "is-active" : ""}" data-preset="${key}">${label}<em>${count}</em></button>`;
+      }).join("")}
       <button data-reset-v2>Сбросить всё</button>
     </div>`;
   }
@@ -522,8 +530,8 @@
     return `
       ${renderKpis(deals)}
       ${renderExecutiveSummary(deals)}
-      ${renderSalesCommandCenter(deals, baseDeals)}
-      ${renderProblemHeatmap(baseDeals)}
+      ${renderSalesCommandCenter(deals, deals)}
+      ${renderProblemHeatmap(deals)}
       ${renderTodayActions(deals)}
       <section class="v2-dashboard">
         <div class="v2-panel">
@@ -704,8 +712,8 @@
 
   function renderSalesPlanScenario(deals, baseDeals) {
     return `
-      ${renderSalesCommandCenter(deals, baseDeals)}
-      ${renderProblemHeatmap(baseDeals)}
+      ${renderSalesCommandCenter(deals, deals)}
+      ${renderProblemHeatmap(deals)}
       ${renderTodayActions(deals)}
     `;
   }
@@ -726,7 +734,7 @@
   function renderSalesRiskScenario(deals, baseDeals) {
     const riskDeals = highRiskDeals(deals).slice(0, 14);
     return `
-      ${renderProblemHeatmap(baseDeals)}
+      ${renderProblemHeatmap(deals)}
       <section class="v2-table-card">
         <div class="v2-panel-head"><h2>Top-risk сделки</h2><span>сначала сумма под риском</span></div>
         ${table(["ID","Менеджер","Партнёр","Вендор","Сумма","Здоровье","Риск","Следующее действие"], riskDeals.map((deal) => [
@@ -1801,9 +1809,9 @@
     return `
       ${renderKpis(deals)}
       ${renderExecutiveSummary(deals)}
-      ${renderSalesCommandCenter(deals, baseFilteredDeals())}
-      ${renderProblemHeatmap(baseFilteredDeals())}
-      ${renderTrend(baseFilteredDeals())}
+      ${renderSalesCommandCenter(deals, deals)}
+      ${renderProblemHeatmap(deals)}
+      ${renderTrend(deals)}
       ${renderTodayActions(deals)}
       <section class="v2-table-card">
         <div class="v2-panel-head"><h2>Все возможные сделки</h2><span>${rows.length} в выборке · клик открывает карточку</span></div>
