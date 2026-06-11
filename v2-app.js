@@ -606,6 +606,7 @@
   function renderSalesLeadScreen(deals, baseDeals) {
     return `
       ${renderSalesMorningBrief(deals)}
+      ${renderDirectorCommandStrip(deals)}
       ${renderSalesScenarioTabs()}
       ${renderSalesScenarioContent(deals, baseDeals)}
     `;
@@ -647,6 +648,37 @@
     </section>`;
   }
 
+  function renderDirectorCommandStrip(deals) {
+    const risks = highRiskDeals(deals).slice(0, 3);
+    const actions = buildTodayActions(deals).slice(0, 3);
+    const managerRows = salesManagerRows(deals);
+    const weakest = managerRows.find((row) => row.marginGap || row.gap || row.riskAmount);
+    return `<section class="v2-director-grid">
+      <article class="v2-director-focus ${weakest ? "is-danger" : ""}">
+        <span>Фокус руководителя</span>
+        <strong>${weakest?.name || "Команда в норме"}</strong>
+        <small>${weakest ? `${weakest.meetingQuestion} Маржа GAP: ${compactMoney(weakest.marginGap)}.` : "Нет явного управленческого разрыва в выбранном срезе."}</small>
+        ${weakest ? `<button class="v2-mini-button" data-open-manager="${encodeURIComponent(weakest.name)}">Открыть менеджера</button>` : ""}
+      </article>
+      <article class="v2-director-panel">
+        <div class="v2-panel-head"><h2>3 главных риска периода</h2><span>сумма сначала</span></div>
+        <div class="v2-risk-cards">
+          ${risks.map((deal) => `<button class="v2-risk-card ${deal.health}" data-open-deal="${deal.id}">
+            <span>${deal.id} · ${deal.sale}</span>
+            <strong>${compactMoney(deal.amount)}</strong>
+            <small>${deal.partner} · ${nextAction(deal)}</small>
+          </button>`).join("") || `<div class="v2-empty">Критичных рисков в выбранном срезе нет.</div>`}
+        </div>
+      </article>
+      <article class="v2-director-panel">
+        <div class="v2-panel-head"><h2>AI-действия</h2><span>ожидаемый эффект</span></div>
+        <div class="v2-compact-actions">
+          ${actions.map((action, index) => renderActionButton(action, index)).join("") || `<div class="v2-empty">Нет срочных действий.</div>`}
+        </div>
+      </article>
+    </section>`;
+  }
+
   function renderSalesScenarioTabs() {
     const tabs = [
       ["plan", "Контроль плана"],
@@ -672,9 +704,8 @@
 
   function renderSalesPlanScenario(deals, baseDeals) {
     return `
-      ${renderKpis(deals)}
-      ${renderExecutiveSummary(deals)}
       ${renderSalesCommandCenter(deals, baseDeals)}
+      ${renderProblemHeatmap(baseDeals)}
       ${renderTodayActions(deals)}
     `;
   }
@@ -718,14 +749,14 @@
   function renderSalesMeetingScenario(deals) {
     const rows = salesManagerRows(deals).filter((row) => row.gap > 0 || row.riskDeals || row.inflated).slice(0, 8);
     return `<section class="v2-table-card v2-meeting-board">
-      <div class="v2-panel-head"><h2>Планёрка с командой</h2><span>менеджер → факт → GAP → что спросить</span></div>
-      ${table(["Менеджер","План","Факт","GAP","Сумма под риском","Красные ВС","Что спросить"], rows.map((row) => [
+      <div class="v2-panel-head"><h2>Планёрка с командой</h2><span>менеджер → GAP → маржа → вопрос</span></div>
+      ${table(["Менеджер","Оборот GAP","Маржа GAP","Сумма под риском","Низк. маржа","Надутый прогноз","Что спросить"], rows.map((row) => [
         managerLink(row.name),
-        compactMoney(row.plan),
-        compactMoney(row.fact),
         row.gap ? `<strong class="v2-red-text">${compactMoney(row.gap)}</strong>` : "закрыто",
+        row.marginGap ? `<strong class="v2-red-text">${compactMoney(row.marginGap)}</strong>` : "закрыто",
         compactMoney(row.riskAmount),
-        row.riskDeals,
+        row.lowMargin,
+        row.inflated,
         row.meetingQuestion
       ]))}
     </section>
@@ -734,8 +765,8 @@
       <div class="v2-action-list">
         ${rows.slice(0, 4).map((row, index) => `<button class="v2-action-item ${row.riskAmount ? "red" : "yellow"}" data-open-manager="${encodeURIComponent(row.name)}">
           <em>${index + 1}</em>
-          <span><strong>${row.name}</strong><small>${row.meetingQuestion}</small></span>
-          <b>${row.gap ? "GAP" : "Риски"}</b>
+          <span><strong>${row.name}</strong><small>${row.meetingQuestion}</small><i>Маржа GAP: ${compactMoney(row.marginGap)} · риск: ${compactMoney(row.riskAmount)}</i></span>
+          <b>${row.marginGap ? "Маржа" : row.gap ? "GAP" : "Риски"}</b>
         </button>`).join("") || `<div class="v2-empty">Нет явной повестки для планёрки.</div>`}
       </div>
     </section>`;
@@ -796,16 +827,22 @@
           </div>
         </div>
         <div class="v2-action-list">
-          ${actions.map((action, index) => `
-            <button class="v2-action-item ${action.level}" ${action.dealId ? `data-open-deal="${action.dealId}"` : ""} ${action.filterKey ? `data-quick-filter="${action.filterKey}" data-quick-value="${action.filterValue}"` : ""} ${action.objectType ? `data-open-object="${action.objectType}" data-object-name="${encodeURIComponent(action.objectName)}"` : ""}>
-              <em>${index + 1}</em>
-              <span><strong>${action.title}</strong><small>${action.note}</small></span>
-              <b>${action.badge}</b>
-            </button>
-          `).join("") || `<div class="v2-empty">На сегодня нет критичных действий.</div>`}
+          ${actions.map((action, index) => renderActionButton(action, index)).join("") || `<div class="v2-empty">На сегодня нет критичных действий.</div>`}
         </div>
       </section>
     `;
+  }
+
+  function renderActionButton(action, index) {
+    return `<button class="v2-action-item ${action.level}" ${action.dealId ? `data-open-deal="${action.dealId}"` : ""} ${action.filterKey ? `data-quick-filter="${action.filterKey}" data-quick-value="${action.filterValue}"` : ""} ${action.objectType ? `data-open-object="${action.objectType}" data-object-name="${encodeURIComponent(action.objectName)}"` : ""}>
+      <em>${index + 1}</em>
+      <span>
+        <strong>${action.title}</strong>
+        <small>${action.note}</small>
+        <i>${action.effect || "Эффект уточняется"}${action.assignee ? ` · ${action.assignee}` : ""}</i>
+      </span>
+      <b>${action.badge}</b>
+    </button>`;
   }
 
   function renderSalesCommandCenter(deals, baseDeals) {
@@ -947,6 +984,10 @@
     </div>`;
   }
 
+  function marginUpside(deal) {
+    return Math.max(0, Math.round(deal.amount * 0.05 - (deal.marginAmount || 0)));
+  }
+
   function buildTodayActions(deals) {
     const actions = [];
     const plan = planForCurrentRole();
@@ -957,6 +998,8 @@
       actions.push({
         title: `Закрыть разрыв до плана ${money.format(gap)}`,
         note: candidates.length ? `Проверьте ${candidates.length} сделок с высоким AI-прогнозом: ${candidates.map((deal) => deal.id).join(", ")}.` : "В выборке нет сделок с достаточной вероятностью.",
+        effect: candidates.length ? `Потенциал к плану ${compactMoney(sum(candidates, (deal) => deal.aiForecast))}` : `GAP ${compactMoney(gap)}`,
+        assignee: "руководитель продаж",
         badge: "План-факт",
         level: gap > plan * 0.18 ? "red" : "yellow"
       });
@@ -964,6 +1007,8 @@
     deals.filter((deal) => deal.burnoutRisk === "Высокий").sort((a, b) => b.amount - a.amount).slice(0, 2).forEach((deal) => actions.push({
       title: `Обновить сделку ${deal.id}`,
       note: `${deal.partner} · ${deal.vendor}: ${deal.risks[0] || "высокий риск выгорания"}, сумма ${money.format(deal.amount)}.`,
+      effect: `Под угрозой ${compactMoney(deal.amount)}`,
+      assignee: deal.sale,
       badge: "Выгорание",
       level: "red",
       dealId: deal.id
@@ -971,6 +1016,8 @@
     deals.filter((deal) => deal.cpExpired).sort((a, b) => b.amount - a.amount).slice(0, 1).forEach((deal) => actions.push({
       title: `Проверить КП по ${deal.id}`,
       note: `КП действует ${deal.cpValidDays} дней, возраст КП ${deal.cpAgeDays} дней. Нужно подтвердить актуальность условий.`,
+      effect: `Сохранить прогноз ${compactMoney(deal.aiForecast)}`,
+      assignee: deal.sale,
       badge: "КП истёк",
       level: "red",
       dealId: deal.id
@@ -982,6 +1029,8 @@
     if (lowMarginPartner) actions.push({
       title: `Проверить маржу партнёра ${lowMarginPartner.key}`,
       note: `${lowMarginPartner.lowMargin.length} ВС с маржей ниже 5%, средняя маржа портфеля ${formatMarginPercent(lowMarginPartner.avgMargin)}.`,
+      effect: `Добор маржи ${compactMoney(sum(lowMarginPartner.lowMargin, marginUpside))}`,
+      assignee: "PAM / Sale",
       badge: "Маржа",
       level: "yellow",
       objectType: "partner",
@@ -994,6 +1043,8 @@
     if (lowMarginVendor) actions.push({
       title: `Согласовать условия по вендору ${lowMarginVendor.key}`,
       note: `Pipeline ${money.format(lowMarginVendor.amount)}, ${lowMarginVendor.lowMargin.length} низкомаржинальных ВС, ${lowMarginVendor.stale} сделок без активности.`,
+      effect: `Добор маржи ${compactMoney(sum(lowMarginVendor.lowMargin, marginUpside))}`,
+      assignee: "SDM",
       badge: "Вендор",
       level: "yellow",
       objectType: "vendor",
@@ -1002,6 +1053,8 @@
     deals.filter((deal) => deal.transferCount >= 3).sort((a, b) => b.transferCount - a.transferCount || b.amount - a.amount).slice(0, 1).forEach((deal) => actions.push({
       title: `Переквалифицировать ${deal.id}`,
       note: `${deal.transferCount} переносов даты закрытия. AI рекомендует закрыть, перевести в проект или снизить прогноз.`,
+      effect: `Очистить прогноз ${compactMoney(deal.aiForecast || deal.amount)}`,
+      assignee: deal.sale,
       badge: "Переносы",
       level: "red",
       dealId: deal.id
