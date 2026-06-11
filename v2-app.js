@@ -479,9 +479,9 @@
       <span>Быстрые сценарии</span>
       ${presets.map(([key, label]) => {
         const count = baseDeals.filter((deal) => focusMatch(deal, key)).length;
-        return `<button class="${state.focusZone === key ? "is-active" : ""}" data-preset="${key}">${label}<em>${count}</em></button>`;
+        return `<button type="button" class="${state.focusZone === key ? "is-active" : ""}" data-preset="${key}">${label}<em>${count}</em></button>`;
       }).join("")}
-      <button data-reset-v2>Сбросить всё</button>
+      <button type="button" data-reset-v2>Сбросить всё</button>
     </div>`;
   }
 
@@ -2057,13 +2057,54 @@
     document.getElementById("v2TooltipLayer")?.classList.remove("is-visible");
   }
 
+  function clearDrilldown() {
+    state.selectedDealId = null;
+    state.selectedObject = null;
+    state.selectedManager = null;
+  }
+
+  function resetV2Filters() {
+    state.filters = {
+      period: "month",
+      region: "all",
+      employee: "all",
+      partner: "all",
+      vendor: "all",
+      status: "all",
+      amount: "all",
+      health: "all"
+    };
+    state.focusZone = "all";
+    state.monthFocus = "all";
+    state.stageFocus = "all";
+    clearDrilldown();
+  }
+
   function wireEvents() {
+    appRoot().onclick = (event) => {
+      const resetButton = event.target.closest("[data-reset-v2]");
+      if (resetButton) {
+        event.preventDefault();
+        resetV2Filters();
+        render();
+        return;
+      }
+
+      const presetButton = event.target.closest("[data-preset]");
+      if (presetButton) {
+        event.preventDefault();
+        state.focusZone = state.focusZone === presetButton.dataset.preset ? "all" : presetButton.dataset.preset;
+        state.monthFocus = "all";
+        state.stageFocus = "all";
+        clearDrilldown();
+        render();
+      }
+    };
+
     document.querySelectorAll("[data-v2-role]").forEach((button) => {
       button.addEventListener("click", () => {
         state.role = button.dataset.v2Role;
-        state.selectedDealId = null;
-        state.selectedObject = null;
-        state.selectedManager = null;
+        clearDrilldown();
         state.focusZone = "all";
         state.monthFocus = "all";
         state.stageFocus = "all";
@@ -2073,36 +2114,12 @@
     });
     document.querySelectorAll("[data-filter]").forEach((input) => {
       input.addEventListener("change", () => {
+        const changedFilter = input.dataset.filter;
         state.filters[input.dataset.filter] = input.value;
-        state.selectedDealId = null;
-        state.selectedObject = null;
-        state.selectedManager = null;
-        state.focusZone = "all";
-        state.monthFocus = "all";
-        state.stageFocus = "all";
+        clearDrilldown();
+        if (changedFilter === "period") state.monthFocus = "all";
         render();
       });
-    });
-    document.querySelectorAll("[data-preset]").forEach((button) => {
-      button.addEventListener("click", () => {
-        state.focusZone = state.focusZone === button.dataset.preset ? "all" : button.dataset.preset;
-        state.monthFocus = "all";
-        state.stageFocus = "all";
-        state.selectedDealId = null;
-        state.selectedObject = null;
-        state.selectedManager = null;
-        render();
-      });
-    });
-    document.querySelector("[data-reset-v2]")?.addEventListener("click", () => {
-      state.filters = { period: "month", region: "all", employee: "all", partner: "all", vendor: "all", status: "all", amount: "all", health: "all" };
-      state.focusZone = "all";
-      state.monthFocus = "all";
-      state.stageFocus = "all";
-      state.selectedDealId = null;
-      state.selectedObject = null;
-      state.selectedManager = null;
-      render();
     });
     document.querySelectorAll("[data-sales-scenario]").forEach((button) => {
       button.addEventListener("click", () => {
