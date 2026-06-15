@@ -17,7 +17,7 @@
     focusZone: "all",
     monthFocus: "all",
     stageFocus: "all",
-    salesScenario: "plan",
+    salesScenario: "team",
     selectedManager: null,
     selectedObject: null,
     selectedDealId: null,
@@ -431,7 +431,7 @@
     root.innerHTML = `
       <section class="v2-shell">
         ${renderTopbar(deals)}
-        ${state.selectedDealId ? renderDealDetail(deals) : renderRoleScreen(deals, baseDeals)}
+        ${state.selectedDealId && state.role !== "allDeals" ? renderDealDetail(deals) : renderRoleScreen(deals, baseDeals)}
       </section>
     `;
     wireEvents();
@@ -461,7 +461,7 @@
           ${selectField("amount", "Сумма", [["all", "Все"], ["lt5", "до 5 млн"], ["m5to10", "5-10 млн"], ["m10to50", "10-50 млн"], ["gte50", "от 50 млн"]])}
           ${selectField("health", "Здоровье", [["all", "Все"], ["green", "Здоровые"], ["yellow", "Жёлтые"], ["red", "Красные"]])}
         </div>
-        ${renderPresetRow()}
+        ${state.role === "salesLead" ? "" : renderPresetRow()}
         ${renderFocusStatus()}
       </section>
     `;
@@ -613,11 +613,88 @@
 
   function renderSalesLeadScreen(deals, baseDeals) {
     return `
-      ${renderSalesMorningBrief(deals)}
-      ${renderDirectorCommandStrip(deals)}
+      ${renderSalesCockpit(deals)}
       ${renderSalesScenarioTabs()}
       ${renderSalesScenarioContent(deals, baseDeals)}
     `;
+  }
+
+  function renderSalesCockpit(deals) {
+    return `<section class="v2-sales-cockpit">
+      ${renderMarginCockpit(deals)}
+      ${renderTeamCockpit(deals)}
+      ${renderLeaderWorkQueue(deals)}
+    </section>`;
+  }
+
+  function renderMarginCockpit(deals) {
+    const plan = planForCurrentRole();
+    const fact = factAmount(deals);
+    const forecast = forecastAmount(deals);
+    const marginPlan = marginPlanAmount(plan);
+    const marginFact = factMarginAmount(deals);
+    const marginForecast = forecastMarginAmount(deals);
+    const marginGap = Math.max(0, marginPlan - marginForecast);
+    const turnoverGap = Math.max(0, plan - forecast);
+    const marginFactPercent = Math.round(marginFact / Math.max(marginPlan, 1) * 100);
+    const marginForecastPercent = Math.round(marginForecast / Math.max(marginPlan, 1) * 100);
+    const riskDeals = highRiskDeals(deals);
+    const riskAmount = sum(riskDeals, (deal) => deal.amount);
+    return `<article class="v2-cockpit-card v2-margin-cockpit ${marginGap ? "is-danger" : ""}">
+      <div class="v2-cockpit-head">
+        <div>
+          <span class="v2-kicker">Главный контроль периода</span>
+          <h2>${marginGap ? `GAP маржи ${compactMoney(marginGap)}` : "Маржа закрывается"}</h2>
+          <p>План маржи ${compactMoney(marginPlan)} · факт ${compactMoney(marginFact)} · AI ${compactMoney(marginForecast)}</p>
+        </div>
+        <strong>${marginForecastPercent}%</strong>
+      </div>
+      <div class="v2-cockpit-bars">
+        ${cockpitProgress("Факт маржи", marginFact, marginPlan, "fact", `${marginFactPercent}% плана`)}
+        ${cockpitProgress("AI-прогноз маржи", marginForecast, marginPlan, marginGap ? "gap" : "ai", marginGap ? `не хватает ${compactMoney(marginGap)}` : "план закрывается")}
+      </div>
+      <div class="v2-source-split">
+        <div><span>Факт 1С</span><strong>${compactMoney(fact)}</strong><small>реализованный оборот</small></div>
+        <div><span>AI-прогноз</span><strong>${compactMoney(forecast)}</strong><small>взвешенный открытый pipeline</small></div>
+        <div class="${turnoverGap ? "is-danger" : ""}"><span>GAP оборота</span><strong>${compactMoney(turnoverGap)}</strong><small>после AI-прогноза</small></div>
+        <div class="${riskAmount ? "is-danger" : ""}"><span>Под риском</span><strong>${compactMoney(riskAmount)}</strong><small>${riskDeals.length} ВС</small></div>
+      </div>
+    </article>`;
+  }
+
+  function cockpitProgress(label, value, plan, type, note) {
+    const percent = Math.round(value / Math.max(plan, 1) * 100);
+    const capped = Math.min(100, Math.max(0, percent));
+    return `<div class="v2-cockpit-progress ${type}">
+      <div><span>${label}</span><strong>${compactMoney(value)}</strong></div>
+      <div class="v2-cockpit-track"><i style="width:${capped}%"></i></div>
+      <small>${note}</small>
+    </div>`;
+  }
+
+  function renderTeamCockpit(deals) {
+    const rows = salesManagerRows(deals).slice(0, 5);
+    return `<article class="v2-cockpit-card v2-team-cockpit">
+      <div class="v2-panel-head"><h2>Команда: где вмешаться</h2><span>сначала GAP маржи</span></div>
+      <div class="v2-team-focus-list">
+        ${rows.map((row) => `<button class="v2-team-focus-row ${row.marginGap || row.riskAmount ? "is-danger" : ""}" data-open-manager="${encodeURIComponent(row.name)}">
+          <span><strong>${row.name}</strong><small>${row.rows.length} ВС · ср. маржа ${formatMarginPercent(row.avgMargin)}</small></span>
+          <em><b>${row.marginGap ? compactMoney(row.marginGap) : "закрыто"}</b><small>GAP маржи</small></em>
+          <em><b>${compactMoney(row.riskAmount)}</b><small>под риском</small></em>
+        </button>`).join("") || `<div class="v2-empty">Команда без явных разрывов.</div>`}
+      </div>
+    </article>`;
+  }
+
+  function renderLeaderWorkQueue(deals) {
+    const actions = buildTodayActions(deals).slice(0, 4);
+    return `<article class="v2-cockpit-card v2-workqueue">
+      <div class="v2-panel-head"><h2>Что проверить сегодня</h2><span>сценарии и действия</span></div>
+      ${renderPresetRow()}
+      <div class="v2-compact-actions">
+        ${actions.map((action, index) => renderActionButton(action, index)).join("") || `<div class="v2-empty">Нет срочных действий.</div>`}
+      </div>
+    </article>`;
   }
 
   function renderSalesMorningBrief(deals) {
@@ -689,11 +766,11 @@
 
   function renderSalesScenarioTabs() {
     const tabs = [
-      ["plan", "Контроль плана"],
       ["team", "Команда"],
+      ["plan", "План и pipeline"],
+      ["meeting", "Планёрка"],
       ["risks", "Риски и выгорание"],
       ["forecast", "Прогноз vs факт"],
-      ["meeting", "Планёрка"],
       ["lost", "Проигранные"]
     ];
     return `<section class="v2-scenario-tabs" aria-label="Сценарии руководителя продаж">
@@ -1806,6 +1883,7 @@
 
   function renderAllDeals(deals) {
     const rows = [...deals].sort((a, b) => riskRank(b) - riskRank(a));
+    const selectedDeal = data.deals.find((deal) => deal.id === state.selectedDealId) || rows[0];
     return `
       ${renderKpis(deals)}
       ${renderExecutiveSummary(deals)}
@@ -1813,21 +1891,61 @@
       ${renderProblemHeatmap(deals)}
       ${renderTrend(deals)}
       ${renderTodayActions(deals)}
-      <section class="v2-table-card">
-        <div class="v2-panel-head"><h2>Все возможные сделки</h2><span>${rows.length} в выборке · клик открывает карточку</span></div>
-        <div class="v2-table-wrap">
-          <table class="v2-table">
-            <thead><tr><th>ID</th><th>Статус / партнёр</th><th>Оборот</th><th>Маржа ₽</th><th>Маржа %</th><th>Вендор</th><th>PAM</th><th>SDM</th><th>Sale</th><th>Регион</th><th>AI</th><th>В период</th><th>Прогноз роли</th><th>Доверие</th><th>Здоровье</th><th>Класс</th><th>Переносы</th><th>Активность</th><th>КП</th><th>Выгорание</th></tr></thead>
-            <tbody>${rows.map((deal) => {
-              const confidence = forecastConfidence(deal);
-              return `<tr class="v2-row-${deal.health}" data-open-deal="${deal.id}">
-              <td><strong>${deal.id}</strong><small>${formatDate(deal.createdAt)}</small></td><td><strong>${deal.status}</strong><small>${deal.partner}</small></td><td class="v2-num v2-strong-money">${money.format(deal.amount)}</td><td class="v2-num v2-strong-money">${money.format(deal.marginAmount || 0)}</td><td class="v2-num ${isLowMargin(deal) ? "v2-red-text" : "v2-green-text"}"><strong>${formatMarginPercent(deal)}</strong></td><td>${deal.vendor}</td><td>${deal.pam}</td><td>${deal.sdm}</td><td>${deal.sale}</td><td>${deal.region}</td><td class="v2-num">${deal.probability}%</td><td class="v2-num">${deal.closeInPeriodProbability}%</td><td class="v2-num">${money.format(deal.managerForecast)}</td><td>${scorePill(confidence)}</td><td><span class="v2-badge ${deal.health}">${healthLabels[deal.health]}</span></td><td>${renderClassification(deal)}</td><td>${deal.transferCount}</td><td>${deal.lastActivityDays} дн.</td><td>${deal.cpExpired ? "Истёк" : deal.cpAgeDays ? `${deal.cpAgeDays} дн.` : "нет КП"}</td><td><span class="v2-badge ${deal.burnoutRisk === "Высокий" ? "red" : deal.burnoutRisk === "Средний" ? "yellow" : "green"}">${deal.burnoutRisk}</span></td>
-            </tr>`;
-            }).join("")}</tbody>
-          </table>
+      <section class="v2-deals-workspace">
+        <div class="v2-table-card">
+          <div class="v2-panel-head"><h2>Все возможные сделки</h2><span>${rows.length} в выборке · клик показывает справа</span></div>
+          <div class="v2-table-wrap">
+            <table class="v2-table v2-deals-table">
+              <thead><tr><th>ID</th><th>Статус / партнёр</th><th>Оборот</th><th>Маржа ₽</th><th>Маржа %</th><th>Вендор</th><th>Sale</th><th>AI</th><th>Доверие</th><th>Класс</th><th>Риск</th></tr></thead>
+              <tbody>${rows.map((deal) => {
+                const confidence = forecastConfidence(deal);
+                const selected = selectedDeal?.id === deal.id;
+                return `<tr class="v2-row-${deal.health} ${selected ? "is-selected" : ""}" data-open-deal="${deal.id}">
+                <td><strong>${deal.id}</strong><small>${formatDate(deal.createdAt)}</small></td>
+                <td><strong>${deal.status}</strong><small>${deal.partner}</small></td>
+                <td class="v2-num v2-strong-money">${compactMoney(deal.amount)}</td>
+                <td class="v2-num v2-strong-money">${compactMoney(deal.marginAmount || 0)}</td>
+                <td class="v2-num ${isLowMargin(deal) ? "v2-red-text" : "v2-green-text"}"><strong>${formatMarginPercent(deal)}</strong></td>
+                <td>${deal.vendor}</td>
+                <td>${deal.sale}</td>
+                <td class="v2-num">${deal.probability}%</td>
+                <td>${scorePill(confidence)}</td>
+                <td>${renderClassification(deal)}</td>
+                <td>${deal.transferCount} перен. · ${deal.lastActivityDays} дн.</td>
+              </tr>`;
+              }).join("")}</tbody>
+            </table>
+          </div>
         </div>
+        ${renderDealSidePanel(selectedDeal)}
       </section>
     `;
+  }
+
+  function renderDealSidePanel(deal) {
+    if (!deal) return `<aside class="v2-deal-side"><div class="v2-empty">Выберите сделку в таблице.</div></aside>`;
+    const confidence = forecastConfidence(deal);
+    return `<aside class="v2-deal-side">
+      <div class="v2-panel-head"><h2>${deal.id}</h2><span>${deal.status}</span></div>
+      <h3>${deal.partner}</h3>
+      <p>${deal.vendor} · ${deal.sale}</p>
+      <div class="v2-side-money">
+        <div><span>Оборот</span><strong>${compactMoney(deal.amount)}</strong></div>
+        <div class="${isLowMargin(deal) ? "is-danger" : ""}"><span>Маржа</span><strong>${compactMoney(deal.marginAmount || 0)}</strong><small>${formatMarginPercent(deal)}</small></div>
+      </div>
+      <div class="v2-side-facts">
+        <div><span>AI</span><strong>${deal.probability}%</strong></div>
+        <div><span>Доверие</span><strong>${confidence}%</strong></div>
+        <div><span>Переносы</span><strong>${deal.transferCount}</strong></div>
+        <div><span>Активность</span><strong>${deal.lastActivityDays} дн.</strong></div>
+      </div>
+      <div class="v2-side-action">
+        <span>Управленческое действие</span>
+        <strong>${nextAction(deal)}</strong>
+        <small>${deal.risks[0] || forecastMismatchReason(deal)}</small>
+      </div>
+      <button class="v2-button" data-create-task="${deal.id}">Поставить задачу</button>
+    </aside>`;
   }
 
   function renderObjectDetail(deals, selectedObject) {
@@ -1902,20 +2020,15 @@
             <button class="v2-button" data-create-task="${deal.id}">Поставить задачу</button>
           </div>
         </div>
-        <section class="v2-grid">
-          ${kpi("Оборот ВС", money.format(deal.amount), `${deal.status} · ${deal.stage}`)}
-          ${kpi("Маржа ВС", money.format(deal.marginAmount || 0), `${formatMarginPercent(deal)} от оборота`, isLowMargin(deal) ? "is-danger" : "")}
-          ${kpi("Вероятность", `${deal.probability}%`, healthLabels[deal.health], deal.health === "red" ? "is-danger" : "")}
-          ${kpi("Закрытие в период", `${deal.closeInPeriodProbability}%`, "вероятность закрытия в текущем месяце/квартале", deal.closeInPeriodProbability < 35 && deal.status === "В работе" ? "is-warning" : "")}
-          ${kpi("Риск переноса / срыва", `${deal.transferFailureRisk}%`, deal.transferFailureRisk >= 70 ? "высокий риск" : "управляемый риск", deal.transferFailureRisk >= 70 ? "is-danger" : deal.transferFailureRisk >= 45 ? "is-warning" : "")}
-          ${kpi("Доверие к прогнозу", `${confidence}%`, confidenceMeta.label, confidenceMeta.color === "red" ? "is-danger" : confidenceMeta.color === "yellow" ? "is-warning" : "")}
-          ${kpi("Прогноз роли / AI", `${money.format(deal.managerForecast)} / ${money.format(deal.aiForecast)}`, `маржа AI ${compactMoney(deal.aiForecast * marginPercent(deal) / 100)}`, isInflatedForecast(deal) ? "is-warning" : "")}
-          ${kpi("Переносы", deal.transferCount, deal.transferCount >= 3 ? "нужна переквалификация" : "в пределах контроля", deal.transferCount >= 3 ? "is-danger" : "")}
-          ${kpi("Дата создания", formatDate(deal.createdAt), deal.closedAt ? `закрыта ${formatDate(deal.closedAt)}` : "сделка открыта")}
+        <section class="v2-grid v2-executive-deal-grid">
+          ${kpi("Оборот", money.format(deal.amount), `${deal.status} · ${deal.stage}`)}
+          ${kpi("Маржа", money.format(deal.marginAmount || 0), `${formatMarginPercent(deal)} от оборота`, isLowMargin(deal) ? "is-danger" : "")}
+          ${kpi("AI / в период", `${deal.probability}% / ${deal.closeInPeriodProbability}%`, "выигрыш · закрытие в период", deal.closeInPeriodProbability < 35 && deal.status === "В работе" ? "is-warning" : "")}
+          ${kpi("Доверие", `${confidence}%`, confidenceMeta.label, confidenceMeta.color === "red" ? "is-danger" : confidenceMeta.color === "yellow" ? "is-warning" : "")}
         </section>
-        <section class="v2-summary">
+        <section class="v2-summary v2-deal-management-summary">
           <article>
-            <span>Классификация AI</span>
+            <span>AI-класс</span>
             <strong>${renderClassification(deal)}</strong>
             <small>${nextAction(deal)}</small>
           </article>
@@ -1924,23 +2037,24 @@
             <strong>${isInflatedForecast(deal) ? "Надутый прогноз" : "Расхождение в норме"}</strong>
             <small>${forecastMismatchReason(deal)}</small>
           </article>
-          <article class="${deal.revivalProbability ? "is-danger" : ""}">
-            <span>Закрытие / реанимация</span>
-            <strong>${deal.status === "В работе" ? "Пока в работе" : deal.lossReason}</strong>
-            <small>${deal.revivalProbability ? `${deal.revivalHypothesis}. Эффект ${compactMoney(deal.revivalEffect)}.` : "Потенциал реанимации не требуется."}</small>
+          <article class="${deal.transferCount >= 3 || deal.burnoutRisk === "Высокий" ? "is-danger" : ""}">
+            <span>Причина риска</span>
+            <strong>${deal.risks[0] || deal.lossReason || "Критичных рисков нет"}</strong>
+            <small>${deal.transferCount} переносов · активность ${deal.lastActivityDays} дн. назад · КП ${deal.cpExpired ? "истёк" : "актуален"}</small>
           </article>
         </section>
         <section class="v2-two-col">
           <div class="v2-panel">
-            <div class="v2-panel-head"><h2>Риски и история</h2><span>${deal.risks.length}</span></div>
+            <div class="v2-panel-head"><h2>Что проверить руководителю</h2><span>${deal.risks.length} рисков</span></div>
             <div class="v2-list">
-              ${deal.risks.length ? deal.risks.map((risk) => `<div class="v2-list-item"><span><strong>${risk}</strong><span>AI учитывает риск в здоровье сделки и прогнозе выгорания.</span></span><em class="v2-badge red">риск</em></div>`).join("") : `<div class="v2-empty">Критичных рисков нет.</div>`}
-              ${deal.closeDateHistory.length ? deal.closeDateHistory.map((item) => `<div class="v2-list-item"><span><strong>Перенос ${item.from} → ${item.to}</strong><span>${item.reason}</span></span><em class="v2-badge yellow">перенос</em></div>`).join("") : ""}
+              <div class="v2-list-item"><span><strong>${nextAction(deal)}</strong><span>Основное действие для менеджера / руководителя.</span></span><em class="v2-badge ${deal.health}">${healthLabels[deal.health]}</em></div>
+              ${deal.risks.slice(0, 4).map((risk) => `<div class="v2-list-item"><span><strong>${risk}</strong><span>Влияет на AI-прогноз и доверие к сделке.</span></span><em class="v2-badge red">риск</em></div>`).join("")}
+              ${deal.closeDateHistory.slice(0, 2).map((item) => `<div class="v2-list-item"><span><strong>Перенос ${item.from} → ${item.to}</strong><span>${item.reason}</span></span><em class="v2-badge yellow">перенос</em></div>`).join("")}
             </div>
           </div>
           <div class="v2-panel">
-            <div class="v2-panel-head"><h2>AI-рекомендации и задачи</h2><span>${tasksForDeal(deal.id).length}</span></div>
-            <div class="v2-insight">${deal.burnoutRisk === "Высокий" ? "Нужно обновить статус сделки сегодня: проверить актуальность КП, причину отсутствия активности и подтвердить следующий шаг с партнёром." : "Сделка в рабочем состоянии. Рекомендуется держать контакт и подтвердить следующий шаг до конца периода."}</div>
+            <div class="v2-panel-head"><h2>Источник прогноза</h2><span>факт vs AI</span></div>
+            <div class="v2-insight">${deal.status === "Выиграна" ? "Факт берется из реализации. AI-прогноз для открытых сделок не подменяет сумму сделки, а взвешивает вероятность закрытия." : "Сумма сделки не меняется: AI использует вероятность, маржу и риск переноса для взвешенного прогноза."}</div>
             ${renderScoreExplanation(deal, confidence)}
             ${renderTasks(deal.id)}
           </div>
@@ -2098,6 +2212,17 @@
         state.stageFocus = "all";
         clearDrilldown();
         render();
+        return;
+      }
+
+      const dealTarget = event.target.closest("[data-open-deal]");
+      if (dealTarget) {
+        event.preventDefault();
+        state.selectedDealId = dealTarget.dataset.openDeal;
+        state.selectedObject = null;
+        state.selectedManager = null;
+        render();
+        if (state.role !== "allDeals") requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
       }
     };
 
@@ -2143,15 +2268,6 @@
         state.selectedObject = null;
         state.selectedManager = null;
         render();
-      });
-    });
-    document.querySelectorAll("[data-open-deal]").forEach((row) => {
-      row.addEventListener("click", () => {
-        state.selectedDealId = row.dataset.openDeal;
-        state.selectedObject = null;
-        state.selectedManager = null;
-        render();
-        requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
       });
     });
     document.querySelector("[data-back-dashboard]")?.addEventListener("click", () => {

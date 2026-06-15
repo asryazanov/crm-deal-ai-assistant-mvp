@@ -262,6 +262,228 @@
   line-height: 1.35;
 }
 
+.v2-sales-cockpit {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.8fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.v2-cockpit-card {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.v2-margin-cockpit {
+  border-left: 5px solid var(--color-primary);
+}
+
+.v2-margin-cockpit.is-danger {
+  border-left-color: var(--color-danger);
+}
+
+.v2-cockpit-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.v2-cockpit-head h2 {
+  margin: 5px 0 0;
+  color: var(--color-navy);
+  font-size: clamp(26px, 3vw, 42px);
+  line-height: 1.05;
+}
+
+.v2-margin-cockpit.is-danger .v2-cockpit-head h2 {
+  color: var(--color-danger-text);
+}
+
+.v2-cockpit-head p {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  line-height: 1.35;
+}
+
+.v2-cockpit-head > strong {
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: var(--color-teal-soft);
+  color: var(--color-primary);
+  padding: 10px 12px;
+  font-size: 26px;
+  line-height: 1;
+}
+
+.v2-cockpit-bars {
+  display: grid;
+  gap: 12px;
+}
+
+.v2-cockpit-progress {
+  display: grid;
+  gap: 7px;
+}
+
+.v2-cockpit-progress > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.v2-cockpit-progress span,
+.v2-source-split span,
+.v2-side-money span,
+.v2-side-facts span,
+.v2-side-action span {
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.v2-cockpit-progress strong {
+  color: var(--color-navy);
+  font-size: 18px;
+}
+
+.v2-cockpit-track {
+  height: 18px;
+  border-radius: 999px;
+  background: #EEF3F5;
+  overflow: hidden;
+}
+
+.v2-cockpit-track i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+.v2-cockpit-progress.fact .v2-cockpit-track i {
+  background: var(--color-success);
+}
+
+.v2-cockpit-progress.gap .v2-cockpit-track i {
+  background: var(--color-danger);
+}
+
+.v2-cockpit-progress small {
+  color: var(--color-muted);
+}
+
+.v2-source-split {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.v2-source-split div {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  padding: 11px;
+  display: grid;
+  gap: 5px;
+}
+
+.v2-source-split strong {
+  color: var(--color-navy);
+  font-size: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v2-source-split small {
+  color: var(--color-muted);
+}
+
+.v2-source-split .is-danger {
+  background: var(--color-danger-bg);
+  border-color: rgba(185,28,28,0.18);
+}
+
+.v2-source-split .is-danger strong {
+  color: var(--color-danger-text);
+}
+
+.v2-team-cockpit,
+.v2-workqueue {
+  grid-column: 2;
+}
+
+.v2-margin-cockpit {
+  grid-row: span 2;
+}
+
+.v2-team-focus-list {
+  display: grid;
+  gap: 8px;
+}
+
+.v2-team-focus-row {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: #fff;
+  padding: 11px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(86px, auto) minmax(86px, auto);
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+}
+
+.v2-team-focus-row:hover,
+.v2-team-focus-row.is-danger:hover {
+  border-color: var(--color-primary);
+  background: #FAFDFD;
+}
+
+.v2-team-focus-row.is-danger {
+  border-color: rgba(185,28,28,0.16);
+  background: var(--color-danger-bg);
+}
+
+.v2-team-focus-row strong,
+.v2-team-focus-row b,
+.v2-team-focus-row small {
+  display: block;
+}
+
+.v2-team-focus-row strong {
+  color: var(--color-primary);
+}
+
+.v2-team-focus-row small {
+  margin-top: 3px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.v2-team-focus-row em {
+  color: var(--color-text);
+  font-style: normal;
+  text-align: right;
+}
+
+.v2-team-focus-row b {
+  color: var(--color-navy);
+  white-space: nowrap;
+}
+
 .v2-director-grid {
   display: grid;
   grid-template-columns: minmax(240px, 0.72fr) minmax(0, 1.15fr) minmax(0, 1.15fr);
@@ -1399,6 +1621,13 @@
   box-shadow: inset 4px 0 0 var(--color-warning);
 }
 
+.v2-table tbody tr.is-selected,
+.v2-table tbody tr.v2-row-red.is-selected,
+.v2-table tbody tr.v2-row-yellow.is-selected {
+  background: #F0FAFA;
+  box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
 .v2-object-link {
   border: 0;
   background: transparent;
@@ -1419,6 +1648,101 @@
 .v2-num {
   text-align: right !important;
   white-space: nowrap;
+}
+
+.v2-deals-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(330px, 0.32fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.v2-deals-workspace .v2-table-card {
+  min-width: 0;
+}
+
+.v2-deals-table th,
+.v2-deals-table td {
+  font-size: 10.5px;
+  padding: 8px 7px;
+}
+
+.v2-deal-side {
+  position: sticky;
+  top: 18px;
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.v2-deal-side h3 {
+  margin: 0;
+  color: var(--color-navy);
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.v2-deal-side p {
+  margin: -8px 0 0;
+  color: var(--color-muted);
+  line-height: 1.35;
+}
+
+.v2-side-money {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.v2-side-money div,
+.v2-side-facts div,
+.v2-side-action {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface-soft);
+  padding: 11px;
+  display: grid;
+  gap: 5px;
+}
+
+.v2-side-money .is-danger,
+.v2-side-action.is-danger {
+  background: var(--color-danger-bg);
+  border-color: rgba(185,28,28,0.18);
+}
+
+.v2-side-money strong,
+.v2-side-facts strong,
+.v2-side-action strong {
+  color: var(--color-navy);
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.v2-side-money .is-danger strong {
+  color: var(--color-danger-text);
+}
+
+.v2-side-money small,
+.v2-side-action small {
+  color: var(--color-muted);
+}
+
+.v2-side-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.v2-side-action {
+  border-left: 4px solid var(--color-primary);
+  background: #F0FAFA;
 }
 
 .v2-two-col {
@@ -1596,12 +1920,21 @@
   .v2-command-grid,
   .v2-dashboard,
   .v2-leader-brief,
+  .v2-sales-cockpit,
+  .v2-source-split,
+  .v2-deals-workspace,
   .v2-director-grid,
   .v2-two-col,
   .v2-action-list,
   .v2-zone-grid,
   .v2-trend-bars {
     grid-template-columns: 1fr 1fr;
+  }
+  .v2-margin-cockpit,
+  .v2-team-cockpit,
+  .v2-workqueue {
+    grid-column: auto;
+    grid-row: auto;
   }
 }
 
@@ -1615,6 +1948,12 @@
   .v2-command-grid,
   .v2-dashboard,
   .v2-leader-brief,
+  .v2-sales-cockpit,
+  .v2-source-split,
+  .v2-team-focus-row,
+  .v2-deals-workspace,
+  .v2-side-money,
+  .v2-side-facts,
   .v2-director-grid,
   .v2-two-col,
   .v2-action-list,
