@@ -211,6 +211,13 @@
   font-weight: 850;
 }
 
+.v2-focus-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .v2-leader-brief {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -453,6 +460,11 @@
   border-color: var(--color-primary);
   background: var(--color-teal-soft);
   color: var(--color-primary);
+}
+
+.v2-scenario-chip.reset {
+  color: var(--color-primary);
+  border-color: rgba(1,105,111,0.28);
 }
 
 .v2-scenario-chip em {

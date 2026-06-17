@@ -90,6 +90,7 @@
     quarter: ["2026-04", "2026-05", "2026-06"],
     year: ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"]
   };
+  let documentEventsBound = false;
 
   function compactMoney(value) {
     if (Math.abs(value) >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(value >= 10_000_000_000 ? 0 : 1)} млрд ₽`;
@@ -497,7 +498,13 @@
     if (state.focusZone !== "all") parts.push(labels[state.focusZone]);
     if (state.monthFocus !== "all") parts.push(`месяц ${state.monthFocus.slice(5)}`);
     if (state.stageFocus !== "all") parts.push(`стадия: ${state.stageFocus}`);
-    return `<div class="v2-focus-status"><span>Фокус: ${parts.join(" · ")}</span><button data-clear-focus>Снять фокус</button></div>`;
+    return `<div class="v2-focus-status">
+      <span>Фокус: ${parts.join(" · ")}</span>
+      <div class="v2-focus-actions">
+        <button type="button" data-clear-focus>Снять фокус</button>
+        <button type="button" data-reset-v2>Сбросить всё</button>
+      </div>
+    </div>`;
   }
 
   function employeeOptions() {
@@ -519,8 +526,8 @@
   }
 
   function renderRoleScreen(deals, baseDeals = deals) {
-    if (state.role === "salesLead" && state.selectedManager) return renderSalesManagerDetail(baseDeals, state.selectedManager);
-    if (state.selectedObject) return renderObjectDetail(baseDeals, state.selectedObject);
+    if (state.role === "salesLead" && state.selectedManager) return renderSalesManagerDetail(deals, state.selectedManager);
+    if (state.selectedObject) return renderObjectDetail(deals, state.selectedObject);
     if (state.role === "dataQuality") return renderDataQualityScreen(baseDeals);
     if (state.role === "currentDeals") return renderCurrentDealsScreen(deals);
     if (state.role === "forecastAccuracy") return renderForecastAccuracyScreen(deals);
@@ -715,10 +722,10 @@
       ["transfers", "3+ переноса"],
       ["lowConfidence", "Низкое доверие"]
     ];
-    return presets.map(([key, label]) => {
+    return `${presets.map(([key, label]) => {
       const count = baseDeals.filter((deal) => focusMatch(deal, key)).length;
       return `<button type="button" class="v2-scenario-chip ${state.focusZone === key ? "is-active" : ""}" data-preset="${key}">${label}<em>${count}</em></button>`;
-    }).join("");
+    }).join("")}<button type="button" class="v2-scenario-chip reset" data-reset-v2>Сбросить</button>`;
   }
 
   function renderSalesMorningBrief(deals) {
@@ -2220,6 +2227,14 @@
 
   function wireEvents() {
     appRoot().onclick = (event) => {
+      const tooltipButton = event.target.closest("[data-tooltip]");
+      if (tooltipButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        showTooltip(tooltipButton);
+        return;
+      }
+
       const resetButton = event.target.closest("[data-reset-v2]");
       if (resetButton) {
         event.preventDefault();
@@ -2239,6 +2254,30 @@
         return;
       }
 
+      const objectButton = event.target.closest("[data-open-object]");
+      if (objectButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        state.selectedObject = { type: objectButton.dataset.openObject, name: decodeURIComponent(objectButton.dataset.objectName) };
+        state.selectedDealId = null;
+        state.selectedManager = null;
+        render();
+        requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
+        return;
+      }
+
+      const managerButton = event.target.closest("[data-open-manager]");
+      if (managerButton) {
+        event.preventDefault();
+        event.stopPropagation();
+        state.selectedManager = decodeURIComponent(managerButton.dataset.openManager);
+        state.selectedDealId = null;
+        state.selectedObject = null;
+        render();
+        requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
+        return;
+      }
+
       const dealTarget = event.target.closest("[data-open-deal]");
       if (dealTarget) {
         event.preventDefault();
@@ -2247,20 +2286,149 @@
         state.selectedManager = null;
         render();
         if (state.role !== "allDeals") requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
+        return;
       }
-    };
 
-    document.querySelectorAll("[data-v2-role]").forEach((button) => {
-      button.addEventListener("click", () => {
-        state.role = button.dataset.v2Role;
+      const roleButton = event.target.closest("[data-v2-role]");
+      if (roleButton) {
+        event.preventDefault();
+        state.role = roleButton.dataset.v2Role;
         clearDrilldown();
         state.focusZone = "all";
         state.monthFocus = "all";
         state.stageFocus = "all";
         state.filters.employee = "all";
         render();
-      });
-    });
+        return;
+      }
+
+      const scenarioButton = event.target.closest("[data-sales-scenario]");
+      if (scenarioButton) {
+        event.preventDefault();
+        state.salesScenario = scenarioButton.dataset.salesScenario;
+        clearDrilldown();
+        render();
+        return;
+      }
+
+      const focusButton = event.target.closest("[data-focus-zone]");
+      if (focusButton) {
+        event.preventDefault();
+        const zone = focusButton.dataset.focusZone;
+        state.focusZone = state.focusZone === zone ? "all" : zone;
+        if (focusButton.dataset.heatmapFilter) {
+          state.filters[focusButton.dataset.heatmapFilter] = decodeURIComponent(focusButton.dataset.heatmapValue);
+        }
+        state.monthFocus = "all";
+        state.stageFocus = "all";
+        clearDrilldown();
+        render();
+        return;
+      }
+
+      const backDashboardButton = event.target.closest("[data-back-dashboard]");
+      if (backDashboardButton) {
+        event.preventDefault();
+        state.selectedDealId = null;
+        render();
+        return;
+      }
+
+      const quickFilterButton = event.target.closest("[data-quick-filter]");
+      if (quickFilterButton) {
+        event.preventDefault();
+        state.filters[quickFilterButton.dataset.quickFilter] = quickFilterButton.dataset.quickValue;
+        clearDrilldown();
+        state.monthFocus = "all";
+        state.stageFocus = "all";
+        render();
+        return;
+      }
+
+      const heatmapFilterButton = event.target.closest("[data-heatmap-filter]");
+      if (heatmapFilterButton) {
+        event.preventDefault();
+        state.filters[heatmapFilterButton.dataset.heatmapFilter] = decodeURIComponent(heatmapFilterButton.dataset.heatmapValue);
+        clearDrilldown();
+        render();
+        return;
+      }
+
+      const backManagerButton = event.target.closest("[data-back-manager]");
+      if (backManagerButton) {
+        event.preventDefault();
+        state.selectedManager = null;
+        render();
+        return;
+      }
+
+      const backObjectButton = event.target.closest("[data-back-object]");
+      if (backObjectButton) {
+        event.preventDefault();
+        state.selectedObject = null;
+        render();
+        return;
+      }
+
+      const clearFocusButton = event.target.closest("[data-clear-focus]");
+      if (clearFocusButton) {
+        event.preventDefault();
+        state.focusZone = "all";
+        state.monthFocus = "all";
+        state.stageFocus = "all";
+        clearDrilldown();
+        render();
+        return;
+      }
+
+      const trendButton = event.target.closest("[data-trend-month]");
+      if (trendButton) {
+        event.preventDefault();
+        clearDrilldown();
+        state.monthFocus = state.monthFocus === trendButton.dataset.trendMonth ? "all" : trendButton.dataset.trendMonth;
+        render();
+        return;
+      }
+
+      const stageButton = event.target.closest("[data-stage-pick]");
+      if (stageButton) {
+        event.preventDefault();
+        clearDrilldown();
+        state.stageFocus = state.stageFocus === stageButton.dataset.stagePick ? "all" : stageButton.dataset.stagePick;
+        render();
+        return;
+      }
+
+      const bulkTaskButton = event.target.closest("[data-create-bulk-tasks]");
+      if (bulkTaskButton) {
+        event.preventDefault();
+        createBulkTasks();
+        return;
+      }
+
+      const taskButton = event.target.closest("[data-create-task]");
+      if (taskButton) {
+        event.preventDefault();
+        createTask(taskButton.dataset.createTask);
+      }
+    };
+
+    const root = appRoot();
+    root.onmouseover = (event) => {
+      const tooltipButton = event.target.closest("[data-tooltip]");
+      if (tooltipButton) showTooltip(tooltipButton);
+    };
+    root.onmouseout = (event) => {
+      if (event.target.closest("[data-tooltip]")) hideTooltip();
+    };
+    root.onfocusin = (event) => {
+      const tooltipButton = event.target.closest("[data-tooltip]");
+      if (tooltipButton) showTooltip(tooltipButton);
+    };
+    root.onfocusout = (event) => {
+      if (event.target.closest("[data-tooltip]")) hideTooltip();
+    };
+
     document.querySelectorAll("[data-filter]").forEach((input) => {
       input.addEventListener("change", () => {
         const changedFilter = input.dataset.filter;
@@ -2270,126 +2438,12 @@
         render();
       });
     });
-    document.querySelectorAll("[data-sales-scenario]").forEach((button) => {
-      button.addEventListener("click", () => {
-        state.salesScenario = button.dataset.salesScenario;
-        state.selectedDealId = null;
-        state.selectedObject = null;
-        state.selectedManager = null;
-        render();
+    if (!documentEventsBound) {
+      document.addEventListener("click", (event) => {
+        if (!event.target.closest("[data-tooltip]")) hideTooltip();
       });
-    });
-    document.querySelectorAll("[data-focus-zone]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const zone = button.dataset.focusZone;
-        state.focusZone = state.focusZone === zone ? "all" : zone;
-        if (button.dataset.heatmapFilter) {
-          state.filters[button.dataset.heatmapFilter] = decodeURIComponent(button.dataset.heatmapValue);
-        }
-        state.monthFocus = "all";
-        state.stageFocus = "all";
-        state.selectedDealId = null;
-        state.selectedObject = null;
-        state.selectedManager = null;
-        render();
-      });
-    });
-    document.querySelector("[data-back-dashboard]")?.addEventListener("click", () => {
-      state.selectedDealId = null;
-      render();
-    });
-    document.querySelectorAll("[data-quick-filter]").forEach((button) => {
-      button.addEventListener("click", () => {
-        state.filters[button.dataset.quickFilter] = button.dataset.quickValue;
-        state.selectedDealId = null;
-        state.selectedObject = null;
-        state.selectedManager = null;
-        state.monthFocus = "all";
-        state.stageFocus = "all";
-        render();
-      });
-    });
-    document.querySelectorAll("[data-heatmap-filter]").forEach((button) => {
-      button.addEventListener("click", () => {
-        if (button.dataset.focusZone) return;
-        state.filters[button.dataset.heatmapFilter] = decodeURIComponent(button.dataset.heatmapValue);
-        state.selectedDealId = null;
-        state.selectedObject = null;
-        state.selectedManager = null;
-        render();
-      });
-    });
-    document.querySelectorAll("[data-open-object]").forEach((button) => {
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        state.selectedObject = { type: button.dataset.openObject, name: decodeURIComponent(button.dataset.objectName) };
-        state.selectedDealId = null;
-        state.selectedManager = null;
-        render();
-        requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
-      });
-    });
-    document.querySelectorAll("[data-open-manager]").forEach((button) => {
-      button.addEventListener("click", (event) => {
-        event.stopPropagation();
-        state.selectedManager = decodeURIComponent(button.dataset.openManager);
-        state.selectedDealId = null;
-        state.selectedObject = null;
-        render();
-        requestAnimationFrame(() => appRoot().scrollIntoView({ behavior: "smooth", block: "start" }));
-      });
-    });
-    document.querySelector("[data-back-manager]")?.addEventListener("click", () => {
-      state.selectedManager = null;
-      render();
-    });
-    document.querySelector("[data-back-object]")?.addEventListener("click", () => {
-      state.selectedObject = null;
-      render();
-    });
-    document.querySelector("[data-clear-focus]")?.addEventListener("click", () => {
-      state.focusZone = "all";
-      state.monthFocus = "all";
-      state.stageFocus = "all";
-      state.selectedObject = null;
-      state.selectedDealId = null;
-      state.selectedManager = null;
-      render();
-    });
-    document.querySelectorAll("[data-trend-month]").forEach((button) => {
-      button.addEventListener("click", () => {
-        state.selectedObject = null;
-        state.selectedDealId = null;
-        state.selectedManager = null;
-        state.monthFocus = state.monthFocus === button.dataset.trendMonth ? "all" : button.dataset.trendMonth;
-        render();
-      });
-    });
-    document.querySelectorAll("[data-stage-pick]").forEach((button) => {
-      button.addEventListener("click", () => {
-        state.selectedObject = null;
-        state.selectedDealId = null;
-        state.selectedManager = null;
-        state.stageFocus = state.stageFocus === button.dataset.stagePick ? "all" : button.dataset.stagePick;
-        render();
-      });
-    });
-    document.querySelectorAll("[data-tooltip]").forEach((button) => {
-      button.addEventListener("mouseenter", () => showTooltip(button));
-      button.addEventListener("focus", () => showTooltip(button));
-      button.addEventListener("mouseleave", hideTooltip);
-      button.addEventListener("blur", hideTooltip);
-      button.addEventListener("click", (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        showTooltip(button);
-      });
-    });
-    document.addEventListener("click", (event) => {
-      if (!event.target.closest("[data-tooltip]")) hideTooltip();
-    });
-    document.querySelector("[data-create-bulk-tasks]")?.addEventListener("click", createBulkTasks);
-    document.querySelector("[data-create-task]")?.addEventListener("click", (event) => createTask(event.currentTarget.dataset.createTask));
+      documentEventsBound = true;
+    }
   }
 
   document.addEventListener("DOMContentLoaded", render);
