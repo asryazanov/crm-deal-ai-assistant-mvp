@@ -264,83 +264,63 @@
 
 .v2-sales-cockpit {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 0.8fr);
-  gap: 16px;
-  align-items: stretch;
-}
-
-.v2-cockpit-card {
-  min-width: 0;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: #fff;
-  box-shadow: var(--shadow-card);
-  padding: 18px;
-  display: grid;
   gap: 14px;
 }
 
-.v2-margin-cockpit {
+.v2-control-strip {
+  border: 1px solid var(--color-border);
   border-left: 5px solid var(--color-primary);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  display: grid;
+  grid-template-columns: minmax(250px, 0.72fr) minmax(240px, 0.52fr) minmax(0, 1.05fr);
+  gap: 16px;
+  align-items: center;
 }
 
-.v2-margin-cockpit.is-danger {
+.v2-control-strip.is-danger {
   border-left-color: var(--color-danger);
 }
 
-.v2-cockpit-head {
-  display: flex;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: flex-start;
-}
-
-.v2-cockpit-head h2 {
-  margin: 5px 0 0;
+.v2-control-main h2 {
+  margin: 4px 0 0;
   color: var(--color-navy);
-  font-size: clamp(26px, 3vw, 42px);
+  font-size: clamp(24px, 2.4vw, 34px);
   line-height: 1.05;
 }
 
-.v2-margin-cockpit.is-danger .v2-cockpit-head h2 {
+.v2-control-strip.is-danger .v2-control-main h2 {
   color: var(--color-danger-text);
 }
 
-.v2-cockpit-head p {
-  margin: 8px 0 0;
+.v2-control-main p {
+  margin: 7px 0 0;
   color: var(--color-muted);
   line-height: 1.35;
 }
 
-.v2-cockpit-head > strong {
-  flex: 0 0 auto;
-  border-radius: 14px;
-  background: var(--color-teal-soft);
-  color: var(--color-primary);
-  padding: 10px 12px;
-  font-size: 26px;
-  line-height: 1;
-}
-
-.v2-cockpit-bars {
+.v2-control-progress {
   display: grid;
-  gap: 12px;
+  gap: 9px;
 }
 
-.v2-cockpit-progress {
+.v2-control-progress-item {
   display: grid;
-  gap: 7px;
+  gap: 5px;
 }
 
-.v2-cockpit-progress > div:first-child {
+.v2-control-progress-item > div:first-child {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
 }
 
-.v2-cockpit-progress span,
-.v2-source-split span,
+.v2-control-progress-item span,
+.v2-control-metric span,
+.v2-scenario-chip-row::before,
 .v2-side-money span,
 .v2-side-facts span,
 .v2-side-action span {
@@ -351,137 +331,200 @@
   text-transform: uppercase;
 }
 
-.v2-cockpit-progress strong {
+.v2-control-progress-item strong {
   color: var(--color-navy);
-  font-size: 18px;
+  font-size: 16px;
 }
 
-.v2-cockpit-track {
-  height: 18px;
+.v2-control-track {
+  height: 12px;
   border-radius: 999px;
   background: #EEF3F5;
   overflow: hidden;
 }
 
-.v2-cockpit-track i {
+.v2-control-track i {
   display: block;
   height: 100%;
   border-radius: 999px;
   background: var(--color-primary);
 }
 
-.v2-cockpit-progress.fact .v2-cockpit-track i {
+.v2-control-progress-item.fact .v2-control-track i {
   background: var(--color-success);
 }
 
-.v2-cockpit-progress.gap .v2-cockpit-track i {
+.v2-control-progress-item.gap .v2-control-track i {
   background: var(--color-danger);
 }
 
-.v2-cockpit-progress small {
-  color: var(--color-muted);
-}
-
-.v2-source-split {
+.v2-control-metrics {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
-.v2-source-split div {
+.v2-control-metric {
   min-width: 0;
   border: 1px solid var(--color-border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--color-surface-soft);
-  padding: 11px;
+  padding: 10px;
   display: grid;
-  gap: 5px;
+  gap: 4px;
 }
 
-.v2-source-split strong {
+.v2-control-metric strong {
   color: var(--color-navy);
-  font-size: 18px;
+  font-size: 17px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.v2-source-split small {
-  color: var(--color-muted);
-}
-
-.v2-source-split .is-danger {
-  background: var(--color-danger-bg);
-  border-color: rgba(185,28,28,0.18);
-}
-
-.v2-source-split .is-danger strong {
-  color: var(--color-danger-text);
-}
-
-.v2-team-cockpit,
-.v2-workqueue {
-  grid-column: 2;
-}
-
-.v2-margin-cockpit {
-  grid-row: span 2;
-}
-
-.v2-team-focus-list {
-  display: grid;
-  gap: 8px;
-}
-
-.v2-team-focus-row {
-  min-width: 0;
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  background: #fff;
-  padding: 11px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(86px, auto) minmax(86px, auto);
-  gap: 10px;
-  align-items: center;
-  text-align: left;
-}
-
-.v2-team-focus-row:hover,
-.v2-team-focus-row.is-danger:hover {
-  border-color: var(--color-primary);
-  background: #FAFDFD;
-}
-
-.v2-team-focus-row.is-danger {
-  border-color: rgba(185,28,28,0.16);
-  background: var(--color-danger-bg);
-}
-
-.v2-team-focus-row strong,
-.v2-team-focus-row b,
-.v2-team-focus-row small {
-  display: block;
-}
-
-.v2-team-focus-row strong {
-  color: var(--color-primary);
-}
-
-.v2-team-focus-row small {
-  margin-top: 3px;
+.v2-control-metric small {
   color: var(--color-muted);
   font-size: 11px;
 }
 
-.v2-team-focus-row em {
-  color: var(--color-text);
-  font-style: normal;
-  text-align: right;
+.v2-control-metric.red {
+  background: var(--color-danger-bg);
+  border-color: rgba(185,28,28,0.18);
 }
 
-.v2-team-focus-row b {
+.v2-control-metric.red strong {
+  color: var(--color-danger-text);
+}
+
+.v2-control-metric.green strong {
+  color: var(--color-success-text);
+}
+
+.v2-control-metric.ai strong {
+  color: var(--color-primary);
+}
+
+.v2-sales-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.32fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.v2-team-workbench,
+.v2-workqueue {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: var(--shadow-card);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.v2-scenario-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.v2-scenario-chip-row::before {
+  content: "Быстрые сценарии";
+  margin-right: 2px;
+}
+
+.v2-scenario-chip {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--color-muted);
+  padding: 7px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 850;
+  font-size: 12px;
+}
+
+.v2-scenario-chip:hover,
+.v2-scenario-chip.is-active {
+  border-color: var(--color-primary);
+  background: var(--color-teal-soft);
+  color: var(--color-primary);
+}
+
+.v2-scenario-chip em {
+  min-width: 20px;
+  border-radius: 999px;
+  background: var(--color-surface-soft);
+  color: var(--color-navy);
+  padding: 3px 6px;
+  font-style: normal;
+  line-height: 1;
+  text-align: center;
+}
+
+.v2-team-table {
+  display: grid;
+  gap: 6px;
+}
+
+.v2-team-table-head,
+.v2-team-table-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.25fr) minmax(90px, 0.55fr) minmax(90px, 0.55fr) minmax(95px, 0.6fr) minmax(220px, 1.25fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.v2-team-table-head {
+  padding: 0 10px 4px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.v2-team-table-row {
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: #fff;
+  padding: 10px;
+  text-align: left;
+}
+
+.v2-team-table-row:hover,
+.v2-team-table-row.is-danger:hover {
+  border-color: var(--color-primary);
+  background: #FAFDFD;
+}
+
+.v2-team-table-row.is-danger {
+  border-color: rgba(185,28,28,0.14);
+}
+
+.v2-team-table-row strong,
+.v2-team-table-row b,
+.v2-team-table-row small {
+  display: block;
+}
+
+.v2-team-table-row strong {
+  color: var(--color-primary);
+}
+
+.v2-team-table-row b {
   color: var(--color-navy);
   white-space: nowrap;
+}
+
+.v2-team-table-row small {
+  color: var(--color-muted);
+  font-size: 11px;
+  line-height: 1.25;
 }
 
 .v2-director-grid {
@@ -1444,6 +1487,51 @@
   color: var(--color-warning-text);
 }
 
+.v2-workqueue .v2-panel-head {
+  align-items: flex-start;
+}
+
+.v2-workqueue .v2-panel-head h2 {
+  font-size: 18px;
+}
+
+.v2-workqueue .v2-compact-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.v2-workqueue .v2-action-item {
+  border-radius: 11px;
+  padding: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.v2-workqueue .v2-action-item em {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+
+.v2-workqueue .v2-action-item b {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.v2-workqueue .v2-action-item strong {
+  font-size: 13px;
+}
+
+.v2-workqueue .v2-action-item small {
+  margin-top: 4px;
+  font-size: 11px;
+}
+
+.v2-workqueue .v2-action-item i {
+  border-radius: 8px;
+  font-size: 10.5px;
+}
+
 .v2-list {
   display: grid;
   gap: 10px;
@@ -1921,7 +2009,9 @@
   .v2-dashboard,
   .v2-leader-brief,
   .v2-sales-cockpit,
-  .v2-source-split,
+  .v2-control-strip,
+  .v2-sales-workbench,
+  .v2-control-metrics,
   .v2-deals-workspace,
   .v2-director-grid,
   .v2-two-col,
@@ -1930,11 +2020,13 @@
   .v2-trend-bars {
     grid-template-columns: 1fr 1fr;
   }
-  .v2-margin-cockpit,
-  .v2-team-cockpit,
-  .v2-workqueue {
-    grid-column: auto;
-    grid-row: auto;
+  .v2-team-table-head,
+  .v2-team-table-row {
+    grid-template-columns: minmax(160px, 1fr) repeat(3, minmax(86px, auto));
+  }
+  .v2-team-table-head span:last-child,
+  .v2-team-table-row > small {
+    grid-column: 1 / -1;
   }
 }
 
@@ -1949,8 +2041,11 @@
   .v2-dashboard,
   .v2-leader-brief,
   .v2-sales-cockpit,
-  .v2-source-split,
-  .v2-team-focus-row,
+  .v2-control-strip,
+  .v2-control-metrics,
+  .v2-sales-workbench,
+  .v2-team-table-head,
+  .v2-team-table-row,
   .v2-deals-workspace,
   .v2-side-money,
   .v2-side-facts,

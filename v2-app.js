@@ -621,13 +621,15 @@
 
   function renderSalesCockpit(deals) {
     return `<section class="v2-sales-cockpit">
-      ${renderMarginCockpit(deals)}
-      ${renderTeamCockpit(deals)}
-      ${renderLeaderWorkQueue(deals)}
+      ${renderControlStrip(deals)}
+      <div class="v2-sales-workbench">
+        ${renderTeamWorkbench(deals)}
+        ${renderLeaderWorkQueue(deals)}
+      </div>
     </section>`;
   }
 
-  function renderMarginCockpit(deals) {
+  function renderControlStrip(deals) {
     const plan = planForCurrentRole();
     const fact = factAmount(deals);
     const forecast = forecastAmount(deals);
@@ -640,61 +642,83 @@
     const marginForecastPercent = Math.round(marginForecast / Math.max(marginPlan, 1) * 100);
     const riskDeals = highRiskDeals(deals);
     const riskAmount = sum(riskDeals, (deal) => deal.amount);
-    return `<article class="v2-cockpit-card v2-margin-cockpit ${marginGap ? "is-danger" : ""}">
-      <div class="v2-cockpit-head">
-        <div>
-          <span class="v2-kicker">Главный контроль периода</span>
-          <h2>${marginGap ? `GAP маржи ${compactMoney(marginGap)}` : "Маржа закрывается"}</h2>
-          <p>План маржи ${compactMoney(marginPlan)} · факт ${compactMoney(marginFact)} · AI ${compactMoney(marginForecast)}</p>
-        </div>
-        <strong>${marginForecastPercent}%</strong>
+    return `<section class="v2-control-strip ${marginGap ? "is-danger" : ""}">
+      <div class="v2-control-main">
+        <span class="v2-kicker">Главный контроль периода</span>
+        <h2>${marginGap ? `GAP маржи ${compactMoney(marginGap)}` : "Маржа закрывается"}</h2>
+        <p>План маржи ${compactMoney(marginPlan)} · факт ${compactMoney(marginFact)} · AI ${compactMoney(marginForecast)}</p>
       </div>
-      <div class="v2-cockpit-bars">
-        ${cockpitProgress("Факт маржи", marginFact, marginPlan, "fact", `${marginFactPercent}% плана`)}
-        ${cockpitProgress("AI-прогноз маржи", marginForecast, marginPlan, marginGap ? "gap" : "ai", marginGap ? `не хватает ${compactMoney(marginGap)}` : "план закрывается")}
+      <div class="v2-control-progress">
+        ${controlProgress("Факт", marginFactPercent, "fact")}
+        ${controlProgress("AI", marginForecastPercent, marginGap ? "gap" : "ai")}
       </div>
-      <div class="v2-source-split">
-        <div><span>Факт 1С</span><strong>${compactMoney(fact)}</strong><small>реализованный оборот</small></div>
-        <div><span>AI-прогноз</span><strong>${compactMoney(forecast)}</strong><small>взвешенный открытый pipeline</small></div>
-        <div class="${turnoverGap ? "is-danger" : ""}"><span>GAP оборота</span><strong>${compactMoney(turnoverGap)}</strong><small>после AI-прогноза</small></div>
-        <div class="${riskAmount ? "is-danger" : ""}"><span>Под риском</span><strong>${compactMoney(riskAmount)}</strong><small>${riskDeals.length} ВС</small></div>
+      <div class="v2-control-metrics">
+        ${controlMetric("GAP оборота", compactMoney(turnoverGap), turnoverGap ? "red" : "green", "после AI")}
+        ${controlMetric("Факт 1С", compactMoney(fact), "fact", "реализация")}
+        ${controlMetric("AI-прогноз", compactMoney(forecast), "ai", "взвешено")}
+        ${controlMetric("Под риском", compactMoney(riskAmount), riskAmount ? "red" : "green", `${riskDeals.length} ВС`)}
       </div>
-    </article>`;
+    </section>`;
   }
 
-  function cockpitProgress(label, value, plan, type, note) {
-    const percent = Math.round(value / Math.max(plan, 1) * 100);
+  function controlProgress(label, percent, type) {
     const capped = Math.min(100, Math.max(0, percent));
-    return `<div class="v2-cockpit-progress ${type}">
-      <div><span>${label}</span><strong>${compactMoney(value)}</strong></div>
-      <div class="v2-cockpit-track"><i style="width:${capped}%"></i></div>
+    return `<div class="v2-control-progress-item ${type}">
+      <div><span>${label}</span><strong>${percent}%</strong></div>
+      <div class="v2-control-track"><i style="width:${capped}%"></i></div>
+    </div>`;
+  }
+
+  function controlMetric(label, value, tone, note) {
+    return `<div class="v2-control-metric ${tone}">
+      <span>${label}</span>
+      <strong>${value}</strong>
       <small>${note}</small>
     </div>`;
   }
 
-  function renderTeamCockpit(deals) {
-    const rows = salesManagerRows(deals).slice(0, 5);
-    return `<article class="v2-cockpit-card v2-team-cockpit">
-      <div class="v2-panel-head"><h2>Команда: где вмешаться</h2><span>сначала GAP маржи</span></div>
-      <div class="v2-team-focus-list">
-        ${rows.map((row) => `<button class="v2-team-focus-row ${row.marginGap || row.riskAmount ? "is-danger" : ""}" data-open-manager="${encodeURIComponent(row.name)}">
+  function renderTeamWorkbench(deals) {
+    const rows = salesManagerRows(deals).slice(0, 7);
+    return `<section class="v2-team-workbench">
+      <div class="v2-panel-head"><h2>Команда продаж</h2><span>сначала GAP маржи</span></div>
+      <div class="v2-scenario-chip-row">${renderScenarioChips()}</div>
+      <div class="v2-team-table">
+        <div class="v2-team-table-head">
+          <span>Менеджер</span><span>GAP маржи</span><span>GAP оборота</span><span>Под риском</span><span>Действие</span>
+        </div>
+        ${rows.map((row) => `<button class="v2-team-table-row ${row.marginGap || row.riskAmount ? "is-danger" : ""}" data-open-manager="${encodeURIComponent(row.name)}">
           <span><strong>${row.name}</strong><small>${row.rows.length} ВС · ср. маржа ${formatMarginPercent(row.avgMargin)}</small></span>
-          <em><b>${row.marginGap ? compactMoney(row.marginGap) : "закрыто"}</b><small>GAP маржи</small></em>
-          <em><b>${compactMoney(row.riskAmount)}</b><small>под риском</small></em>
+          <b class="${row.marginGap ? "v2-red-text" : "v2-green-text"}">${row.marginGap ? compactMoney(row.marginGap) : "закрыто"}</b>
+          <b>${row.gap ? compactMoney(row.gap) : "закрыто"}</b>
+          <b>${compactMoney(row.riskAmount)}</b>
+          <small>${row.meetingQuestion}</small>
         </button>`).join("") || `<div class="v2-empty">Команда без явных разрывов.</div>`}
       </div>
-    </article>`;
+    </section>`;
   }
 
   function renderLeaderWorkQueue(deals) {
-    const actions = buildTodayActions(deals).slice(0, 4);
-    return `<article class="v2-cockpit-card v2-workqueue">
-      <div class="v2-panel-head"><h2>Что проверить сегодня</h2><span>сценарии и действия</span></div>
-      ${renderPresetRow()}
+    const actions = buildTodayActions(deals).slice(0, 3);
+    return `<aside class="v2-workqueue">
+      <div class="v2-panel-head"><h2>Что проверить сегодня</h2><span>${actions.length} действия</span></div>
       <div class="v2-compact-actions">
         ${actions.map((action, index) => renderActionButton(action, index)).join("") || `<div class="v2-empty">Нет срочных действий.</div>`}
       </div>
-    </article>`;
+    </aside>`;
+  }
+
+  function renderScenarioChips() {
+    const baseDeals = baseFilteredDeals();
+    const presets = [
+      ["lowMargin", "Низкая маржа"],
+      ["burnout", "Выгорание"],
+      ["transfers", "3+ переноса"],
+      ["lowConfidence", "Низкое доверие"]
+    ];
+    return presets.map(([key, label]) => {
+      const count = baseDeals.filter((deal) => focusMatch(deal, key)).length;
+      return `<button type="button" class="v2-scenario-chip ${state.focusZone === key ? "is-active" : ""}" data-preset="${key}">${label}<em>${count}</em></button>`;
+    }).join("");
   }
 
   function renderSalesMorningBrief(deals) {
