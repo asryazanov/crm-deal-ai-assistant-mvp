@@ -245,8 +245,24 @@
 
   function periodMatch(deal) {
     const months = periodMonths[state.filters.period] || periodMonths.month;
-    const month = deal.status === "Выиграна" ? (deal.closeMonth || deal.plannedMonth) : deal.plannedMonth;
-    return months.includes(month);
+    return dealMonthsForPeriod(deal).some((month) => months.includes(month));
+  }
+
+  function dealMonthsForPeriod(deal) {
+    if (deal.status === "В работе") return [deal.plannedMonth].filter(Boolean);
+    return [deal.closeMonth, deal.plannedMonth].filter(Boolean);
+  }
+
+  function isOpenInPeriod(deal) {
+    return deal.status === "В работе" && periodMonthsForCurrentFilter().includes(deal.plannedMonth);
+  }
+
+  function isFactInPeriod(deal) {
+    return deal.status === "Выиграна" && periodMonthsForCurrentFilter().includes(deal.closeMonth || deal.plannedMonth);
+  }
+
+  function periodMonthsForCurrentFilter() {
+    return periodMonths[state.filters.period] || periodMonths.month;
   }
 
   function sum(items, selector) {
@@ -272,7 +288,7 @@
   }
 
   function factAmount(deals) {
-    return sum(deals.filter((deal) => deal.status === "Выиграна"), (deal) => deal.shipmentAmount || deal.amount);
+    return sum(deals.filter(isFactInPeriod), (deal) => deal.shipmentAmount || deal.amount);
   }
 
   function marginPercent(deal) {
@@ -288,18 +304,18 @@
   }
 
   function factMarginAmount(deals) {
-    return sum(deals.filter((deal) => deal.status === "Выиграна"), (deal) => {
+    return sum(deals.filter(isFactInPeriod), (deal) => {
       const realizedAmount = deal.shipmentAmount || deal.amount;
       return realizedAmount * marginPercent(deal) / 100;
     });
   }
 
   function forecastMarginAmount(deals) {
-    return factMarginAmount(deals) + sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.aiForecast * marginPercent(deal) / 100);
+    return factMarginAmount(deals) + sum(deals.filter(isOpenInPeriod), (deal) => deal.aiForecast * marginPercent(deal) / 100);
   }
 
   function humanForecastMarginAmount(deals) {
-    return factMarginAmount(deals) + sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.managerForecast * marginPercent(deal) / 100);
+    return factMarginAmount(deals) + sum(deals.filter(isOpenInPeriod), (deal) => deal.managerForecast * marginPercent(deal) / 100);
   }
 
   function averageMarginPercent(deals) {
@@ -313,11 +329,11 @@
   }
 
   function forecastAmount(deals) {
-    return sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.aiForecast) + factAmount(deals);
+    return sum(deals.filter(isOpenInPeriod), (deal) => deal.aiForecast) + factAmount(deals);
   }
 
   function humanForecastAmount(deals) {
-    return sum(deals.filter((deal) => deal.status === "В работе"), (deal) => deal.managerForecast) + factAmount(deals);
+    return sum(deals.filter(isOpenInPeriod), (deal) => deal.managerForecast) + factAmount(deals);
   }
 
   function forecastConfidence(deal) {
@@ -2434,7 +2450,9 @@
         const changedFilter = input.dataset.filter;
         state.filters[input.dataset.filter] = input.value;
         clearDrilldown();
-        if (changedFilter === "period") state.monthFocus = "all";
+        state.monthFocus = "all";
+        state.stageFocus = "all";
+        if (changedFilter !== "health" && changedFilter !== "amount") state.focusZone = "all";
         render();
       });
     });
